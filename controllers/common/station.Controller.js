@@ -17,7 +17,7 @@ exports.test = async (req, res) => {
 exports.saveStation = async (req, res) => {
   try {
     const { _id } = req.body;
-
+    // id= !_id || null || ""
     let station;
     if (_id) {
       // Update existing
@@ -35,7 +35,7 @@ exports.saveStation = async (req, res) => {
     return res.json(__requestResponse("200", __SUCCESS, station));
   } catch (error) {
     console.error("Save Station Error:", error.message);
-    return res.json(__requestResponse("500", __SOME_ERROR));
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 

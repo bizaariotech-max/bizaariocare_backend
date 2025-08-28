@@ -2,6 +2,29 @@ const Joi = require("joi");
 const mongoose = require("mongoose");
 const { __requestResponse } = require("../utils/constant");
 
+const objectIdField = (isRequired = false) => {
+  let schema = Joi.string().custom((value, helpers) => {
+    // Convert empty string to null to prevent MongoDB cast errors
+    if (value === "") {
+      return null;
+    }
+    if (value && !mongoose.Types.ObjectId.isValid(value)) {
+      return helpers.error("any.invalid");
+    }
+    return value;
+  });
+
+  if (isRequired) {
+    return schema.required().messages({
+      "any.required": "This field is required",
+      "string.empty": "This field cannot be empty",
+      "any.invalid": "Invalid ObjectId format",
+    });
+  } else {
+    return schema.allow("", null).optional();
+  }
+};
+
 // Common reusable ObjectId validation
 // const objectIdField = (isRequired = false) => {
 //   let schema = Joi.string()
@@ -22,24 +45,24 @@ const { __requestResponse } = require("../utils/constant");
 //     : schema.optional();
 // };
 
-const objectIdField = (isRequired = false) => {
-  let schema = Joi.string().custom((value, helpers) => {
-    if (value && !mongoose.Types.ObjectId.isValid(value)) {
-      return helpers.error("any.invalid");
-    }
-    return value;
-  });
+// const objectIdFieldx = (isRequired = false) => {
+//   let schema = Joi.string().custom((value, helpers) => {
+//     if (value && !mongoose.Types.ObjectId.isValid(value)) {
+//       return helpers.error("any.invalid");
+//     }
+//     return value;
+//   });
 
-  if (isRequired) {
-    return schema.required().messages({
-      "any.required": "This field is required",
-      "string.empty": "This field cannot be empty",
-      "any.invalid": "Invalid ObjectId format",
-    });
-  } else {
-    return schema.allow("", null).optional();
-  }
-};
+//   if (isRequired) {
+//     return schema.required().messages({
+//       "any.required": "This field is required",
+//       "string.empty": "This field cannot be empty",
+//       "any.invalid": "Invalid ObjectId format",
+//     });
+//   } else {
+//     return schema.allow("", null).optional();
+//   }
+// };
 
 // Validation schema
 const stationValidationSchema = Joi.object({

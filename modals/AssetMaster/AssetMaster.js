@@ -10,10 +10,6 @@ const AssetMasterSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "station_master",
     },
-    // AssetId: {
-    //   type: String,
-    //   trim: true,
-    // },
     ParentAssetId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "asset_master",
@@ -32,9 +28,8 @@ const AssetMasterSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "admin_lookups",
     },
-
     // -------------------------
-    // Section 2: Categorization
+    // Section 1.2: Categorization --  it come under section 1
     // -------------------------
     AssetCategoryLevel1: {
       type: mongoose.Schema.Types.ObjectId,
