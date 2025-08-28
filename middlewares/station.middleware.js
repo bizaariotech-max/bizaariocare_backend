@@ -1,0 +1,127 @@
+const Joi = require("joi");
+const mongoose = require("mongoose");
+const { __requestResponse } = require("../utils/constant");
+
+// Common reusable ObjectId validation
+// const objectIdField = (isRequired = false) => {
+//   let schema = Joi.string()
+//     .custom((value, helpers) => {
+//       if (value && !mongoose.Types.ObjectId.isValid(value)) {
+//         return helpers.error("any.invalid");
+//       }
+//       return value;
+//     })
+//     .allow("", null);
+
+//   return isRequired
+//     ? schema.required().messages({
+//         "any.required": "This field is required",
+//         "string.empty": "This field cannot be empty",
+//         "any.invalid": "Invalid ObjectId format",
+//       })
+//     : schema.optional();
+// };
+
+const objectIdField = (isRequired = false) => {
+  let schema = Joi.string().custom((value, helpers) => {
+    if (value && !mongoose.Types.ObjectId.isValid(value)) {
+      return helpers.error("any.invalid");
+    }
+    return value;
+  });
+
+  if (isRequired) {
+    return schema.required().messages({
+      "any.required": "This field is required",
+      "string.empty": "This field cannot be empty",
+      "any.invalid": "Invalid ObjectId format",
+    });
+  } else {
+    return schema.allow("", null).optional();
+  }
+};
+
+// Validation schema
+const stationValidationSchema = Joi.object({
+  _id: objectIdField(false),
+
+  ParentStationId: objectIdField(false),
+
+  OrgUnitLevel: objectIdField(true).messages({
+    "any.required": "OrgUnitLevel is required",
+    "string.empty": "OrgUnitLevel cannot be empty",
+  }),
+
+  StationName: Joi.string().required().messages({
+    "any.required": "StationName is required",
+    "string.empty": "StationName cannot be empty",
+  }),
+
+  CountryGroupId: objectIdField(true).messages({
+    "any.required": "CountryGroupId is required",
+    "string.empty": "CountryGroupId cannot be empty",
+  }),
+
+  ISDCode: Joi.string().required().messages({
+    "any.required": "ISDCode is required",
+    "string.empty": "ISDCode cannot be empty",
+  }),
+
+  Currency: objectIdField(false),
+
+  StationAdmins: Joi.array()
+    .items(
+      Joi.object({
+        Name: Joi.string().required().messages({
+          "any.required": "Admin Name is required",
+          "string.empty": "Admin Name cannot be empty",
+        }),
+        MobileNumber: Joi.string().required().messages({
+          "any.required": "Mobile Number is required",
+          "string.empty": "Mobile Number cannot be empty",
+        }),
+        // Email: Joi.string().email().required().messages({
+        //   "any.required": "Email is required",
+        //   "string.empty": "Email cannot be empty",
+        //   "string.email": "Email must be valid",
+        // }),
+        Email: Joi.string().email().allow(null).optional().messages({
+          "string.email": "Email must be valid",
+        }),
+        Password: Joi.string().required().messages({
+          "any.required": "Password is required",
+          "string.empty": "Password cannot be empty",
+        }),
+      })
+    )
+    .allow(null)
+    .optional(),
+
+  CensusYear: Joi.number().allow("", null).optional(),
+  PopulationMale: Joi.number().allow("", null).optional(),
+  PopulationFemale: Joi.number().allow("", null).optional(),
+  TotalPopulation: Joi.number().allow("", null).optional(),
+  LiteracyRate: Joi.number().min(0).max(100).allow("", null).optional(),
+  AreaSQKM: Joi.number().allow("", null).optional(),
+  IsActive: Joi.boolean().allow("", null).optional(),
+});
+
+const validateSaveStation = (req, res, next) => {
+  const { error } = stationValidationSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    return res.json(
+      __requestResponse("400", {
+        errorType: "Validation Error",
+        error: error.details.map((d) => d.message).join(". "),
+      })
+    );
+  }
+  next();
+};
+
+module.exports = {
+  validateSaveStation,
+};
