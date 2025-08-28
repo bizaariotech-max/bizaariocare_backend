@@ -24,7 +24,7 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-app.use(logMiddleware);
+// app.use(logMiddleware);
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(cors())
