@@ -15,7 +15,7 @@ const { validateSaveAsset } = require("../../middlewares/asset.middleware");
 router.get("/test", test);
 
 // Save Asset (Add/Edit)
-router.post("/SaveAsset", validateSaveAsset, saveAsset);
+router.post("/SaveAsset_Identifier", validateSaveAsset, saveAsset);
 
 //  Asset List
 router.post("/AssetList", assetList);
