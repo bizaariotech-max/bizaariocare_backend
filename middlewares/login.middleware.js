@@ -43,12 +43,15 @@ const createAssetLoginSchema = Joi.object({
   Email: Joi.string().email().optional().allow("", null).messages({
     "string.email": "Email must be valid",
   }),
+  ParentUserId: objectIdField(false),
   EntityTypeId: objectIdField(true).messages({
     "any.required": "EntityTypeId is required",
   }),
   Entity: objectIdField(true).messages({
-    "any.required": "Entity (Asset) is required",
+    "any.required": "Entity Id (Asset Id) is required",
   }),
+  IsEmailVerified: Joi.boolean().optional(),
+  IsPhoneVerified: Joi.boolean().optional(),
 });
 
 // Asset Login validation

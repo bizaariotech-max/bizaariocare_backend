@@ -203,17 +203,17 @@ const AssetMasterSchema = new mongoose.Schema(
     ContactPhoneNumber: String,
     ContactEmailAddress: String,
 
-    // -------------------------
-    // Section 16: Asset Admin (Multiple)
-    // -------------------------
-    AssetAdmins: [
-      {
-        Name: String,
-        Email: String,
-        PhoneNumber: String,
-        Password: String,
-      },
-    ],
+    // // -------------------------
+    // // Section 16: Asset Admin (Multiple)  removed section
+    // // -------------------------
+    // AssetAdmins: [
+    //   {
+    //     Name: String,
+    //     Email: String,
+    //     PhoneNumber: String,
+    //     Password: String,
+    //   },
+    // ],
     // -------------------------
     // Section 17: Bussiness mapping - Asset Mapping (Multiple) --- for linkn
     // -------------------------
