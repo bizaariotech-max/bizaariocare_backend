@@ -38,12 +38,28 @@ app.use('/doctor',require('./routers/doctor/doctoroutes'));
 app.use('/hospital',require('./routers/hospital/hospitalroutes'));
 
 // new api routes use this pattern = BASE_URL/api/v1/name
-app.use("/api/v1/common", require("./routers/common/lookup.Routes"));
+
+// *common api routes
+app.use("/api/v1/common", require("./routers/common/lookup.Routes")); // common lookup list
+// upload api routes
 //* use this single api to upload image in web it returns url which can be stored in any schema
 app.use("/api/v1/common", require("./routers/common/upload.Routes"));
-app.use("/api/v1/admin", require("./routers/AdminLookup/adminLookup.Routes"));
+// app.use("/api/v1/common", require("./routers/common/login.Routes"));
+
+
+// * admin api routes
+// lookup
+app.use("/api/v1/admin", require("./routers/AdminLookup/adminLookup.Routes")); //lookup
+// station
 app.use("/api/v1/admin", require("./routers/common/station.Routes"));
+// station
 app.use("/api/v1/admin", require("./routers/Asset/asset.Routes"));
+// 
+app.use("/api/v1/admin", require("./routers/common/lookup.Routes"));
+// login api routes
+app.use("/api/v1/admin", require("./routers/common/login.Routes"));
+
+
 
 
 

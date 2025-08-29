@@ -16,7 +16,7 @@ const objectIdField = (isRequired = false) => {
 
   if (isRequired) {
     return schema.required().messages({
-      "any.required": "This field is required",
+      "any.required": "This ObjectId field is required",
       "string.empty": "This field cannot be empty",
       "any.invalid": "Invalid ObjectId format",
     });
@@ -24,6 +24,17 @@ const objectIdField = (isRequired = false) => {
     return schema.allow("", null).optional();
   }
 };
+
+// const objectIdField = () =>
+//   Joi.string()
+//     .allow(null)
+//     .custom((value, helpers) => {
+//       if (value === null) return value;
+//       if (!mongoose.Types.ObjectId.isValid(value)) {
+//         return helpers.error("any.invalid");
+//       }
+//       return value;
+//     }, "ObjectId Validation");
 
 // Common reusable ObjectId validation
 // const objectIdField = (isRequired = false) => {
@@ -85,12 +96,14 @@ const stationValidationSchema = Joi.object({
     "string.empty": "CountryGroupId cannot be empty",
   }),
 
-  ISDCode: Joi.string().required().messages({
-    "any.required": "ISDCode is required",
-    "string.empty": "ISDCode cannot be empty",
-  }),
-
+  // ISDCode: Joi.string().required().messages({
+  //   "any.required": "ISDCode is required",
+  //   "string.empty": "ISDCode cannot be empty",
+  // }),
+  ISDCode: objectIdField(false),
   Currency: objectIdField(false),
+  // ISDCode: Joi.string().allow(null, "").optional(),
+  // Currency: Joi.string().allow(null, "").optional(),
 
   StationAdmins: Joi.array()
     .items(
