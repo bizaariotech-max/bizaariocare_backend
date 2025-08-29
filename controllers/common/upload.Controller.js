@@ -4,7 +4,8 @@ const AdminEnvSetting = require("../../modals/common/AdminEnvSetting");
 const { __requestResponse, __deleteFile } = require("../../utils/constant");
 const { __SUCCESS, __SOME_ERROR } = require("../../utils/variable");
 
-//  Add Image (image/video/pdf)
+
+//  Add Image (image/video/pdf) .
 const AddImage = async (req, res) => {
   try {
     if (!req.files || !req.files.file || req.files.file.length === 0) {
