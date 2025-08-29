@@ -2,6 +2,9 @@ const mongoose=require('mongoose')
 
 require('dotenv').config()
 
+// Fix for Mongoose deprecation warning
+mongoose.set('strictQuery', false);
+
 const connect=()=>
     
     {
