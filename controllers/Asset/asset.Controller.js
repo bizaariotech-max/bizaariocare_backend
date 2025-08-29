@@ -44,6 +44,89 @@ exports.assetList = async (req, res) => {
   try {
     // Handle both req.body and req.query to support GET and POST requests
     const requestData = req.body || req.query || {};
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      AssetCategoryLevel1,
+      AssetCategoryLevel2,
+      AssetCategoryLevel3,
+      StationId,
+      SubscriptionType,
+    } = requestData;
+
+    const query = {};
+
+    // Search filter
+    if (search) {
+      query.AssetName = { $regex: search, $options: "i" };
+    }
+
+    // Asset Category Level 1 filter
+    if (AssetCategoryLevel1) {
+      query.AssetCategoryLevel1 = AssetCategoryLevel1;
+    }
+
+    // Asset Category Level 2 filter
+    if (AssetCategoryLevel2) {
+      query.AssetCategoryLevel2 = AssetCategoryLevel2;
+    }
+
+    // Asset Category Level 3 filter
+    if (AssetCategoryLevel3) {
+      query.AssetCategoryLevel3 = AssetCategoryLevel3;
+    }
+
+    // Station filter
+    if (StationId) {
+      query.StationId = StationId;
+    }
+
+    // Subscription Type filter
+    if (SubscriptionType) {
+      query.SubscriptionType = SubscriptionType;
+    }
+
+    const total = await Asset.countDocuments(query);
+    const list = await Asset.find(query)
+      .populate("StationId", "StationName")
+      .populate("ParentAssetId", "AssetName")
+      .populate("SubscriptionType", "lookup_value")
+      .populate("AssetCategoryLevel1", "lookup_value")
+      .populate("AssetCategoryLevel2", "lookup_value")
+      .populate("AssetCategoryLevel3", "lookup_value")
+      .populate("MedicalSpecialties", "lookup_value")
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        filters: {
+          search,
+          AssetCategoryLevel1,
+          AssetCategoryLevel2,
+          AssetCategoryLevel3,
+          StationId,
+          SubscriptionType,
+        },
+        list: __deepClone(list),
+      })
+    );
+  } catch (error) {
+    console.error("Asset List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+//  Asset List (with pagination + population)
+exports.assetListxx = async (req, res) => {
+  try {
+    // Handle both req.body and req.query to support GET and POST requests
+    const requestData = req.body || req.query || {};
     const { page = 1, limit = 10, search = "" } = requestData;
 
     const query = {};
