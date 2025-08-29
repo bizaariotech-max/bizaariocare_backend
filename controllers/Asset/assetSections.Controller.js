@@ -49,6 +49,7 @@ exports.updateIncorporationDetails = async (req, res) => {
           RegistrationNumber: updatedAsset.RegistrationNumber,
           ValidityExpiry: updatedAsset.ValidityExpiry,
         },
+        // updatedAsset,
       })
     );
   } catch (error) {

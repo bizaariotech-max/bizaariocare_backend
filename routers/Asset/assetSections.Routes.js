@@ -59,13 +59,21 @@ const {
 // -------------------------
 // Section 3: Incorporation Details
 // -------------------------
-router.put("/incorporation-details/:AssetId", validateIncorporationDetails, updateIncorporationDetails);
+router.put(
+  "/incorporation-details/:AssetId",
+  validateIncorporationDetails,
+  updateIncorporationDetails
+);
 router.get("/incorporation-details/:AssetId", getIncorporationDetails);
 
 // -------------------------
 // Section 4: Verification Details
 // -------------------------
-router.put("/verification-details/:AssetId", validateVerificationDetails, updateVerificationDetails);
+router.put(
+  "/verification-details/:AssetId",
+  validateVerificationDetails,
+  updateVerificationDetails
+);
 router.get("/verification-details/:AssetId", getVerificationDetails);
 
 // -------------------------
@@ -89,7 +97,11 @@ router.get("/profile/:AssetId", getAssetProfile);
 // -------------------------
 // Section 8: Medical Specialties
 // -------------------------
-router.put("/medical-specialties/:AssetId", validateMedicalSpecialties, updateMedicalSpecialties);
+router.put(
+  "/medical-specialties/:AssetId",
+  validateMedicalSpecialties,
+  updateMedicalSpecialties
+);
 router.get("/medical-specialties/:AssetId", getMedicalSpecialties);
 
 // -------------------------
@@ -101,9 +113,20 @@ router.get("/social-media/:AssetId", getSocialMedia);
 // -------------------------
 // Section 10: Treatment Package
 // -------------------------
-router.post("/treatment-packages/:AssetId", validateTreatmentPackage, addTreatmentPackage);
-router.put("/treatment-packages/:AssetId/:PackageId", validateTreatmentPackage, updateTreatmentPackage);
-router.delete("/treatment-packages/:AssetId/:PackageId", deleteTreatmentPackage);
+router.post(
+  "/treatment-packages/:AssetId",
+  validateTreatmentPackage,
+  addTreatmentPackage
+);
+router.put(
+  "/treatment-packages/:AssetId/:PackageId",
+  validateTreatmentPackage,
+  updateTreatmentPackage
+);
+router.delete(
+  "/treatment-packages/:AssetId/:PackageId",
+  deleteTreatmentPackage
+);
 router.get("/treatment-packages/:AssetId", getTreatmentPackages);
 
 // -------------------------
@@ -124,7 +147,11 @@ router.get("/fees-charges/:AssetId", getFeesAndCharges);
 // Section 13: OPD Schedule
 // -------------------------
 router.post("/opd-schedule/:AssetId", validateOPDSchedule, addOPDSchedule);
-router.put("/opd-schedule/:AssetId/:ScheduleId", validateOPDSchedule, updateOPDSchedule);
+router.put(
+  "/opd-schedule/:AssetId/:ScheduleId",
+  validateOPDSchedule,
+  updateOPDSchedule
+);
 router.delete("/opd-schedule/:AssetId/:ScheduleId", deleteOPDSchedule);
 router.get("/opd-schedule/:AssetId", getOPDSchedule);
 
