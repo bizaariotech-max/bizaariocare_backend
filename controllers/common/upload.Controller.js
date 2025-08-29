@@ -1,6 +1,6 @@
 const path = require("path");
 const cloudinary = require("cloudinary").v2;
-const AdminEnvSetting = require("../../modals/common/AdminEnvSetting");
+const AdminEnvSetting = require("../../modals/Common/AdminEnvSetting");
 const { __requestResponse, __deleteFile } = require("../../utils/constant");
 const { __SUCCESS, __SOME_ERROR } = require("../../utils/variable");
 
