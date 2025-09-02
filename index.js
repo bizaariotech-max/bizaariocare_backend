@@ -61,6 +61,11 @@ app.use("/api/v1/admin", require("./routers/common/login.Routes"));
 // asset section routes
 app.use("/api/v1/asset-sections", require("./routers/Asset/assetSections.Routes"));
 
+// ContentMaster
+app.use("/api/v1/admin", require("./routers/common/contentMaster.Routes"));
+
+// EventMaster
+app.use("/api/v1/admin", require("./routers/common/eventMaster.Routes"));
 
 
 
