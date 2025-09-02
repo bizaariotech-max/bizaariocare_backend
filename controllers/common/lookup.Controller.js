@@ -12,15 +12,35 @@ const  {
 } =require ("../../utils/variable.js");
 
 const LookupMaster = require ("../../modals/Common/lookupmodel.js");
-
+const AssetMaster = require("../../modals/AssetMaster/AssetMaster.js");
 
 // * LookupList (legacy API)
- const lookupList = async (req, res) => {
+const lookupList = async (req, res) => {
   console.log(req.body);
   console.log("api common lookup list");
   try {
     if (!req?.body?.lookup_type || req?.body?.lookup_type.length === 0) {
       return res.json(__requestResponse("400", "Lookup type is required"));
+    }
+
+    if (req?.body?.lookup_type[0] === "asset_list") {
+      console.warn("kk");
+
+      const assets = await AssetMaster.find();
+      console.warn(assets, "assets");
+      if (assets.length === 0) {
+        return res.json(__requestResponse("404", "No Data found"));
+      }
+      return res.json(
+        __requestResponse(
+          "200",
+          __SUCCESS,
+          assets.map((item) => ({
+            lookup_value: item?.AssetName,
+            _id: item._id,
+          }))
+        )
+      );
     }
 
     const list = await LookupMaster.find({
@@ -36,13 +56,20 @@ const LookupMaster = require ("../../modals/Common/lookupmodel.js");
     if (list.length == 0) {
       return res.json(__requestResponse("404", "No Data found"));
     }
-    return res.json(__requestResponse("200", __SUCCESS, list));
+
+    const transformedList = list.map((item) => ({
+      ...item,
+      parent_lookup_name: item?.parent_lookup_id?.lookup_value || "",
+      parent_lookup_id: item?.parent_lookup_id?._id || "",
+    }));
+
+    return res.json(__requestResponse("200", __SUCCESS, transformedList));
+
+    // return res.json(__requestResponse("200", __SUCCESS, list));
   } catch (error) {
     return res.json(__requestResponse("500", error.message));
   }
 };
-
-
 
 // // * LookupList (new API with transformations) no use
 // export const lookupListxxx = async (req, res) => {
