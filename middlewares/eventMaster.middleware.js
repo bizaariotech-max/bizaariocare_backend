@@ -29,10 +29,11 @@ const objectIdField = (isRequired = false) => {
 
 // Event Schedule Schema
 const eventScheduleSchema = Joi.object({
+  _id: objectIdField(false),
   Date: Joi.date().allow(null).optional(),
   StartTime: Joi.string().allow("", null).optional(),
   EndTime: Joi.string().allow("", null).optional(),
-  NoOfSlots: Joi.number().integer().min(0).allow(null).optional()
+  NoOfSlots: Joi.number().integer().min(0).allow(null).optional(),
 });
 
 // EventMaster Save Schema
