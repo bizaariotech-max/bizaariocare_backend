@@ -24,7 +24,7 @@ const lookupList = async (req, res) => {
     }
 
     if (req?.body?.lookup_type[0] === "asset_list") {
-      console.warn("kk");
+      // console.warn("kk");
 
       const assets = await AssetMaster.find();
       console.warn(assets, "assets");

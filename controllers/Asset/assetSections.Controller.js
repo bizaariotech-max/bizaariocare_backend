@@ -519,7 +519,8 @@ exports.addTreatmentPackage = async (req, res) => {
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
-      { $push: { TreatmentPackages: packageData } },
+      // { $push: { TreatmentPackages: packageData } },
+        { $set: { TreatmentPackages: packageData } },
       { new: true, runValidators: true }
     ).populate("TreatmentPackages.PackageCurrency", "lookup_value");
 
@@ -710,7 +711,8 @@ exports.addFeeCharge = async (req, res) => {
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
-      { $push: { FeesAndCharges: feeData } },
+      // { $push: { FeesAndCharges: feeData } },
+        { $set: { FeesAndCharges: feeData } },
       { new: true, runValidators: true }
     ).populate("FeesAndCharges.ServiceCategory FeesAndCharges.FeeCurrency", "lookup_value");
 
@@ -771,6 +773,8 @@ exports.updateFeeCharge = async (req, res) => {
 exports.deleteFeeCharge = async (req, res) => {
   try {
     const { AssetId, FeeId } = req.params;
+ 
+    
 
     const asset = await Asset.findById(AssetId);
     if (!asset) {
@@ -829,7 +833,8 @@ exports.addOPDSchedule = async (req, res) => {
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
-      { $push: { OPDSchedule: scheduleData } },
+      // { $push: { OPDSchedule: scheduleData } },
+        { $set: { OPDSchedule: scheduleData } },
       { new: true, runValidators: true }
     );
 
