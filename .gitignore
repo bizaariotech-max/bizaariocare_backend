@@ -5,6 +5,10 @@ node_modules
 /.pnp
 .pnp.js
 
+#for documents
+docs
+
+
 src.zip  
 # testing
 /coverage

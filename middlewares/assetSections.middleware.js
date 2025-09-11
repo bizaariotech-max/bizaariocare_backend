@@ -445,7 +445,6 @@ module.exports = {
   validateContactInfo,
   validateAssetMapping,
 };
-
 // const Joi = require("joi");
 // const mongoose = require("mongoose");
 // const { __requestResponse } = require("../utils/constant");
