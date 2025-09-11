@@ -98,7 +98,9 @@ exports.assetList = async (req, res) => {
       .populate("MedicalSpecialties", "lookup_value")
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();//Use lean() for read-only operations
+
 
     return res.json(
       __requestResponse("200", __SUCCESS, {

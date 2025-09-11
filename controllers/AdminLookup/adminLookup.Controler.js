@@ -77,6 +77,7 @@ exports.saveLookup = async (req, res) => {
       sort_order,
       is_active,
       managed_by_ui,
+      other,// new field for any other data
     } = req.body;
 
     const client_id = req.client_id;
@@ -94,6 +95,7 @@ exports.saveLookup = async (req, res) => {
         sort_order,
         is_active,
         managed_by_ui,
+        other,
       };
 
       const newLookup = await TlbLookup.create(_lookupData);
@@ -125,6 +127,7 @@ exports.saveLookup = async (req, res) => {
         sort_order,
         is_active,
         managed_by_ui,
+        other,
       };
 
       const updatedLookup = await TlbLookup.findByIdAndUpdate(
