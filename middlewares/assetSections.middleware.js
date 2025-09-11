@@ -353,7 +353,7 @@ const validateBankDetails = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),
       })
     );
   }
@@ -366,7 +366,7 @@ const validateFeeCharge = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),
       })
     );
   }
@@ -379,7 +379,7 @@ const validateOPDSchedule = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),
       })
     );
   }
@@ -394,7 +394,7 @@ const validateOnlineClinic = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),
       })
     );
   }
@@ -407,7 +407,7 @@ const validateContactInfo = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),  
       })
     );
   }
@@ -422,7 +422,7 @@ const validateAssetMapping = (req, res, next) => {
     return res.json(
       __requestResponse("400", {
         errorType: "Validation Error",
-        error,
+        error: error.details.map((d) => d.message).join(". "),  
       })
     );
   }
