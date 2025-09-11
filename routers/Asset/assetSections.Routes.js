@@ -113,7 +113,12 @@ router.get("/social-media/:AssetId", getSocialMedia);
 // -------------------------
 // Section 10: Treatment Package
 // -------------------------
-router.post(
+// router.post(
+//   "/treatment-packages/:AssetId",
+//   validateTreatmentPackage,
+//   addTreatmentPackage
+// );
+router.put(
   "/treatment-packages/:AssetId",
   validateTreatmentPackage,
   addTreatmentPackage
@@ -138,7 +143,8 @@ router.get("/bank-details/:AssetId", getBankDetails);
 // -------------------------
 // Section 12: Fees and Charges
 // -------------------------
-router.post("/fees-charges/:AssetId", validateFeeCharge, addFeeCharge);
+// router.post("/fees-charges/:AssetId", validateFeeCharge, addFeeCharge);
+router.put("/fees-charges/:AssetId", validateFeeCharge, addFeeCharge);
 router.put("/fees-charges/:AssetId/:FeeId", validateFeeCharge, updateFeeCharge);
 router.delete("/fees-charges/:AssetId/:FeeId", deleteFeeCharge);
 router.get("/fees-charges/:AssetId", getFeesAndCharges);
@@ -146,7 +152,8 @@ router.get("/fees-charges/:AssetId", getFeesAndCharges);
 // -------------------------
 // Section 13: OPD Schedule
 // -------------------------
-router.post("/opd-schedule/:AssetId", validateOPDSchedule, addOPDSchedule);
+// router.post("/opd-schedule/:AssetId", validateOPDSchedule, addOPDSchedule);
+router.put("/opd-schedule/:AssetId", validateOPDSchedule, addOPDSchedule);
 router.put(
   "/opd-schedule/:AssetId/:ScheduleId",
   validateOPDSchedule,
