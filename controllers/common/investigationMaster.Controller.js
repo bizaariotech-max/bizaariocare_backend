@@ -48,12 +48,13 @@ exports.SaveInvestigation = async (req, res) => {
       await __CreateAuditLog(
         "investigation_master", // Collection name
         "UPDATE", // Audit type
-        "INVESTIGATION_UPDATED", // Audit sub type
+        // "INVESTIGATION_UPDATED", // Audit sub type
+        null,
         oldValue, // Old value
         investigation.toObject(), // New value
         investigation._id, // Reference ID
-        req.body.ClientId || null, // Client ID
-        req.body.LoginLogID || null // Login Log ID
+        // req.body.ClientId || null, // Client ID
+        // req.body.LoginLogID || null // Login Log ID
       );
     } else {
       // Create new investigation (when _id is null, undefined, or empty string)
@@ -67,12 +68,13 @@ exports.SaveInvestigation = async (req, res) => {
       await __CreateAuditLog(
         "investigation_master", // Collection name
         "CREATE", // Audit type
-        "INVESTIGATION_CREATED", // Audit sub type
+        // "INVESTIGATION_CREATED", // Audit sub type
+        null,
         null, // Old value (null for new records)
         investigation.toObject(), // New value
         investigation._id, // Reference ID
-        req.body.ClientId || null, // Client ID
-        req.body.LoginLogID || null // Login Log ID
+        // req.body.ClientId || null, // Client ID
+        // req.body.LoginLogID || null // Login Log ID
       );
     }
 

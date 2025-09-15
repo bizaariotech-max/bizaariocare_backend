@@ -36,9 +36,11 @@ async function __CreateAuditLog(
       RollbackedOn: null,
     });
     if (_AuditLog) {
+      console.warn(_AuditLog,"__CreateAuditLog")
       return true;
     }
   } catch (error) {
+    console.error(error,"__CreateAuditLog error")
     return false;
   }
 }

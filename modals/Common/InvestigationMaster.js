@@ -64,6 +64,6 @@ investigationMasterSchema.index({ Investigation_Name: 1 });
 investigationMasterSchema.index({ Investigation_Name: "text" });
 
 module.exports = mongoose.model(
-  "InvestigationMaster",
+  "investigation_master",
   investigationMasterSchema
 );
