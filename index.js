@@ -67,7 +67,7 @@ app.use("/api/v1/admin", require("./routers/common/contentMaster.Routes"));
 // EventMaster
 app.use("/api/v1/admin", require("./routers/common/eventMaster.Routes"));
 
-
+app.use("/api/v1/admin", require("./routers/common/investigationMaster.Routes"));
 
 const server=app.listen(process.env.PORT,()=>
 {
