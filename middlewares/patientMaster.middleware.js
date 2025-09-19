@@ -29,7 +29,24 @@ const objectIdField = (isRequired = false) => {
 const patientMasterValidationSchema = Joi.object({
   _id: objectIdField(false),
 
-  // Patient Personal Information
+  // 1. Patient ID (Auto-generated, not validated in input)
+  PatientId: Joi.string().optional(),
+
+  // 2. Phone Number with ISD Code (Format: +91838383930)
+  PhoneNumber: Joi.string()
+    .pattern(/^\+[1-9]\d{1,14}$/)
+    .required()
+    .messages({
+      "string.pattern.base": "Phone number must be in international format (e.g., +91838383930) with country code",
+      "any.required": "Phone number is required"
+    }),
+
+  // ISDCode field removed as it's now part of PhoneNumber
+
+  // 3. Is Verified
+  IsVerified: Joi.boolean().optional().default(false),
+
+  // 4. Name
   Name: Joi.string()
     .trim()
     .min(1)
@@ -42,6 +59,7 @@ const patientMasterValidationSchema = Joi.object({
       "any.required": "Patient name is required"
     }),
 
+  // 5. Age/DOB
   Age: Joi.number()
     .integer()
     .min(0)
@@ -62,6 +80,7 @@ const patientMasterValidationSchema = Joi.object({
       "date.max": "Date of birth cannot be in the future"
     }),
 
+  // 6. Gender
   Gender: Joi.string()
     .valid('Male', 'Female', 'Other')
     .required()
@@ -70,30 +89,88 @@ const patientMasterValidationSchema = Joi.object({
       "any.required": "Gender is required"
     }),
 
-  Nationality: Joi.string()
+  // 7. Nationality (Station Master - Country)
+  Nationality: objectIdField(true).messages({
+    "any.required": "Nationality is required"
+  }),
+
+  // 8. Country of Residence (Station Master - Country)
+  CountryOfResidence: objectIdField(true).messages({
+    "any.required": "Country of residence is required"
+  }),
+
+  // 9. Address Line 1
+  AddressLine1: Joi.string()
     .trim()
     .min(1)
+    .max(200)
+    .required()
+    .messages({
+      "string.empty": "Address Line 1 is required",
+      "string.min": "Address Line 1 cannot be empty",
+      "string.max": "Address Line 1 cannot exceed 200 characters",
+      "any.required": "Address Line 1 is required"
+    }),
+
+  // 10. Address Line 2
+  AddressLine2: Joi.string()
+    .trim()
+    .max(200)
+    .optional()
+    .allow("", null)
+    .messages({
+      "string.max": "Address Line 2 cannot exceed 200 characters"
+    }),
+
+  // 11. State (Station Master)
+  State: objectIdField(false),
+
+  // 12. City
+  City: Joi.string()
+    .trim()
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      "string.empty": "City is required",
+      "string.min": "City cannot be empty",
+      "string.max": "City cannot exceed 100 characters",
+      "any.required": "City is required"
+    }),
+
+  // 13. Postal Code
+  PostalCode: Joi.string()
+    .trim()
+    .pattern(/^[A-Za-z0-9\s-]{3,10}$/)
+    .optional()
+    .allow("", null)
+    .messages({
+      "string.pattern.base": "Postal code must be 3-10 characters (letters, numbers, spaces, hyphens allowed)"
+    }),
+
+  // 14. Insurance Provider (Admin Lookups)
+  InsuranceProvider: objectIdField(false),
+
+  // 15. Insurance Policy Number
+  InsurancePolicyNumber: Joi.string()
+    .trim()
     .max(50)
-    .required()
+    .optional()
+    .allow("", null)
     .messages({
-      "string.empty": "Nationality is required",
-      "string.min": "Nationality cannot be empty",
-      "string.max": "Nationality cannot exceed 50 characters",
-      "any.required": "Nationality is required"
+      "string.max": "Insurance policy number cannot exceed 50 characters"
     }),
 
-  // Referring Doctor Information
-  ReferringDoctorId: objectIdField(false),
-
-  // Contact Information
-  PhoneNumber: Joi.string()
-    .pattern(/^\+[1-9]\d{1,14}$/)
-    .required()
+  // 16. Insurance Valid Upto
+  InsuranceValidUpto: Joi.date()
+    .min('now')
+    .optional()
+    .allow(null)
     .messages({
-      "string.pattern.base": "Phone number must include valid ISD code (e.g., +91xxxxxxxxxx)",
-      "any.required": "Phone number is required"
+      "date.min": "Insurance validity date cannot be in the past"
     }),
 
+  // 17. Email Address (optional)
   EmailAddress: Joi.string()
     .email()
     .trim()
@@ -104,12 +181,36 @@ const patientMasterValidationSchema = Joi.object({
       "string.email": "Please enter a valid email address"
     }),
 
-  // Status and Metadata
+  // 18. Secondary Contact Name
+  SecondaryContactName: Joi.string()
+    .trim()
+    .max(100)
+    .optional()
+    .allow("", null)
+    .messages({
+      "string.max": "Secondary contact name cannot exceed 100 characters"
+    }),
+
+  // 19. Secondary Contact Number (also with ISD code)
+  SecondaryContactNumber: Joi.string()
+    .pattern(/^\+[1-9]\d{1,14}$/)
+    .optional()
+    .allow("", null)
+    .messages({
+      "string.pattern.base": "Secondary contact number must be in international format (e.g., +91838383930) with country code"
+    }),
+
+  // 20. Relationship (Admin Lookups)
+  Relationship: objectIdField(false),
+
+  // 21. Record Created By (Asset Master)
+  CreatedBy: objectIdField(true).messages({
+    "any.required": "Created by is required"
+  }),
+
+  // System Fields
   IsActive: Joi.boolean().optional().default(true),
   IsDeleted: Joi.boolean().optional().default(false),
-
-  // Audit Trail
-  CreatedBy: objectIdField(false),
   UpdatedBy: objectIdField(false)
 });
 
@@ -119,9 +220,13 @@ const patientListValidationSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).optional().default(10),
   search: Joi.string().trim().optional().allow(""),
   Gender: Joi.string().valid('Male', 'Female', 'Other').optional(),
-  Nationality: Joi.string().trim().optional(),
-  ReferringDoctorId: objectIdField(false),
-  IsActive: Joi.boolean().optional()
+  Nationality: objectIdField(false),
+  CountryOfResidence: objectIdField(false),
+  State: objectIdField(false),
+  City: Joi.string().trim().optional(),
+  IsVerified: Joi.boolean().optional(),
+  IsActive: Joi.boolean().optional(),
+  InsuranceProvider: objectIdField(false)
 });
 
 const validateSavePatient = (req, res, next) => {

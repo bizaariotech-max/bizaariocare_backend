@@ -8,8 +8,10 @@ const {
   getPatientById,
   getPatientByPatientId,
   deletePatient,
-  getPatientsByDoctor,
+  getPatientsByLocation,
   searchPatients,
+  getPatientsByVerificationStatus,
+  updateVerificationStatus,
 } = require("../../controllers/common/patientMaster.Controller");
 
 const {
@@ -36,10 +38,20 @@ router.get("/getPatientByPatientId/:patientId", getPatientByPatientId);
 // Delete Patient (Soft Delete)
 router.delete("/deletePatient/:id", deletePatient);
 
-// Get Patients by Doctor
-router.get("/getPatientsByDoctor/:doctorId", getPatientsByDoctor);
+// Get Patients by Location (Country and/or State)
+router.get("/getPatientsByLocation/:countryId", getPatientsByLocation);
+router.get("/getPatientsByLocation/:countryId/:stateId", getPatientsByLocation);
 
 // Search Patients
 router.get("/searchPatients/:searchTerm", searchPatients);
+
+// Get Patients by Verification Status
+router.get(
+  "/getPatientsByVerificationStatus/:isVerified",
+  getPatientsByVerificationStatus
+);
+
+// Update Patient Verification Status
+router.put("/updateVerificationStatus/:id", updateVerificationStatus);
 
 module.exports = router;

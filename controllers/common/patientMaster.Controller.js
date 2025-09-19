@@ -6,6 +6,7 @@ const {
 } = require("../../utils/variable");
 const { __deepClone } = require("../../utils/constant");
 const { __CreateAuditLog } = require("../../utils/auditlog");
+const mongoose = require("mongoose"); // Add this import
 
 // Test Route
 exports.test = async (req, res) => {
@@ -41,38 +42,44 @@ exports.SavePatient = async (req, res) => {
           runValidators: true
         }
       )
-      .populate("ReferringDoctorId", "DoctorName")
-      .populate("CreatedBy", "UserName")
-      .populate("UpdatedBy", "UserName");
+      .populate("Nationality", "StationName")
+      .populate("CountryOfResidence", "StationName")
+      .populate("State", "StationName")
+      .populate("InsuranceProvider", "LookupValue")
+      .populate("Relationship", "LookupValue")
+      .populate("CreatedBy", "AssetName")
+      .populate("UpdatedBy", "AssetName");
       
       // Create audit log for update
       await __CreateAuditLog(
-        "patient_master", // Collection name
-        "UPDATE", // Audit type
-        // "PATIENT_UPDATED", // Audit sub type
+        "patient_master",
+        "UPDATE",
         null,
-        oldValue, // Old value
-        patient.toObject(), // New value
-        patient._id, // Reference ID
+        oldValue,
+        patient.toObject(),
+        patient._id,
       );
     } else {
-      // Create new patient (when _id is null, undefined, or empty string)
+      // Create new patient
       patient = await PatientMaster.create(patientData);
       
       patient = await PatientMaster.findById(patient._id)
-        .populate("ReferringDoctorId", "DoctorName")
-        .populate("CreatedBy", "UserName")
-        .populate("UpdatedBy", "UserName");
+        .populate("Nationality", "StationName")
+        .populate("CountryOfResidence", "StationName")
+        .populate("State", "StationName")
+        .populate("InsuranceProvider", "LookupValue")
+        .populate("Relationship", "LookupValue")
+        .populate("CreatedBy", "AssetName")
+        .populate("UpdatedBy", "AssetName");
       
       // Create audit log for creation
       await __CreateAuditLog(
-        "patient_master", // Collection name
-        "CREATE", // Audit type
-        // "PATIENT_CREATED", // Audit sub type
+        "patient_master",
+        "CREATE",
         null,
-        null, // Old value (null for new records)
-        patient.toObject(), // New value
-        patient._id, // Reference ID
+        null,
+        patient.toObject(),
+        patient._id,
       );
     }
 
@@ -94,20 +101,26 @@ exports.patientList = async (req, res) => {
       search = "",
       Gender,
       Nationality,
-      ReferringDoctorId,
+      CountryOfResidence,
+      State,
+      City,
+      IsVerified,
       IsActive,
+      InsuranceProvider,
     } = requestData;
 
     const query = { IsDeleted: false };
 
-    // Search filter (Patient Name, PatientId, Phone, Email)
+    // Search filter (Patient Name, PatientId, Phone, Email, City)
     if (search) {
       const regex = new RegExp(search, "i");
       query.$or = [
         { Name: regex },
         { PatientId: regex },
         { PhoneNumber: regex },
-        { EmailAddress: regex }
+        { EmailAddress: regex },
+        { City: regex },
+        { PostalCode: regex }
       ];
     }
 
@@ -116,14 +129,29 @@ exports.patientList = async (req, res) => {
       query.Gender = Gender;
     }
 
-    // Nationality filter
-    if (Nationality) {
-      query.Nationality = { $regex: Nationality, $options: "i" };
+    // Nationality filter - validate ObjectId
+    if (Nationality && mongoose.Types.ObjectId.isValid(Nationality)) {
+      query.Nationality = Nationality;
     }
 
-    // Referring Doctor filter
-    if (ReferringDoctorId) {
-      query.ReferringDoctorId = ReferringDoctorId;
+    // Country of Residence filter - validate ObjectId
+    if (CountryOfResidence && mongoose.Types.ObjectId.isValid(CountryOfResidence)) {
+      query.CountryOfResidence = CountryOfResidence;
+    }
+
+    // State filter - validate ObjectId
+    if (State && mongoose.Types.ObjectId.isValid(State)) {
+      query.State = State;
+    }
+
+    // City filter
+    if (City) {
+      query.City = { $regex: City, $options: "i" };
+    }
+
+    // Verification status filter
+    if (IsVerified !== undefined) {
+      query.IsVerified = IsVerified;
     }
 
     // Active status filter
@@ -131,15 +159,24 @@ exports.patientList = async (req, res) => {
       query.IsActive = IsActive;
     }
 
+    // Insurance Provider filter - validate ObjectId
+    if (InsuranceProvider && mongoose.Types.ObjectId.isValid(InsuranceProvider)) {
+      query.InsuranceProvider = InsuranceProvider;
+    }
+
     const total = await PatientMaster.countDocuments(query);
     const list = await PatientMaster.find(query)
-      .populate("ReferringDoctorId", "DoctorName")
-      .populate("CreatedBy", "UserName")
-      .populate("UpdatedBy", "UserName")
+      .populate("Nationality", "lookup_value")
+      .populate("CountryOfResidence", "lookup_value")
+      .populate("State", "StationName")
+      .populate("InsuranceProvider", "lookup_value")
+      .populate("Relationship", "lookup_value")
+      .populate("CreatedBy", "AssetName")
+      .populate("UpdatedBy", "AssetName")
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .lean(); // Use lean() for read-only operations
+      .lean();
 
     return res.json(
       __requestResponse("200", __SUCCESS, {
@@ -150,8 +187,12 @@ exports.patientList = async (req, res) => {
           search,
           Gender,
           Nationality,
-          ReferringDoctorId,
+          CountryOfResidence,
+          State,
+          City,
+          IsVerified,
           IsActive,
+          InsuranceProvider,
         },
         list: __deepClone(list),
       })
@@ -168,9 +209,13 @@ exports.getPatientById = async (req, res) => {
     const { id } = req.params;
     
     const patient = await PatientMaster.findById(id)
-      .populate("ReferringDoctorId", "DoctorName")
-      .populate("CreatedBy", "UserName")
-      .populate("UpdatedBy", "UserName")
+      .populate("Nationality", "StationName")
+      .populate("CountryOfResidence", "StationName")
+      .populate("State", "StationName")
+      .populate("InsuranceProvider", "LookupValue")
+      .populate("Relationship", "LookupValue")
+      .populate("CreatedBy", "AssetName")
+      .populate("UpdatedBy", "AssetName")
       .lean();
 
     if (!patient) {
@@ -189,11 +234,7 @@ exports.getPatientByPatientId = async (req, res) => {
   try {
     const { patientId } = req.params;
     
-    const patient = await PatientMaster.findByPatientId(patientId)
-      .populate("ReferringDoctorId", "DoctorName")
-      .populate("CreatedBy", "UserName")
-      .populate("UpdatedBy", "UserName")
-      .lean();
+    const patient = await PatientMaster.findByPatientId(patientId);
 
     if (!patient) {
       return res.json(__requestResponse("404", "Patient not found"));
@@ -231,12 +272,12 @@ exports.deletePatient = async (req, res) => {
 
     // Create audit log for deletion
     await __CreateAuditLog(
-      "patient_master", // Collection name
-      "DELETE", // Audit type
-      "PATIENT_DELETED", // Audit sub type
-      oldValue, // Old value
-      patient.toObject(), // New value
-      id, // Reference ID
+      "patient_master",
+      "DELETE",
+      null,
+      oldValue,
+      patient.toObject(),
+      id,
     );
     
     return res.json(__requestResponse("200", "Patient deleted successfully"));
@@ -246,18 +287,16 @@ exports.deletePatient = async (req, res) => {
   }
 };
 
-// Get Patients by Doctor
-exports.getPatientsByDoctor = async (req, res) => {
+// Get Patients by Location
+exports.getPatientsByLocation = async (req, res) => {
   try {
-    const { doctorId } = req.params;
+    const { countryId, stateId } = req.params;
     
-    const patients = await PatientMaster.findByDoctor(doctorId)
-      .populate("ReferringDoctorId", "DoctorName")
-      .lean();
+    const patients = await PatientMaster.findByLocation(countryId, stateId);
 
     return res.json(__requestResponse("200", __SUCCESS, patients));
   } catch (error) {
-    console.error("Get Patients By Doctor Error:", error.message);
+    console.error("Get Patients By Location Error:", error.message);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
@@ -267,13 +306,70 @@ exports.searchPatients = async (req, res) => {
   try {
     const { searchTerm } = req.params;
     
-    const patients = await PatientMaster.searchPatients(searchTerm)
-      .populate("ReferringDoctorId", "DoctorName")
-      .lean();
+    const patients = await PatientMaster.searchPatients(searchTerm);
 
     return res.json(__requestResponse("200", __SUCCESS, patients));
   } catch (error) {
     console.error("Search Patients Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Patients by Verification Status
+exports.getPatientsByVerificationStatus = async (req, res) => {
+  try {
+    const { isVerified } = req.params;
+    const verificationStatus = isVerified === 'true';
+    
+    const patients = await PatientMaster.findByVerificationStatus(verificationStatus);
+
+    return res.json(__requestResponse("200", __SUCCESS, patients));
+  } catch (error) {
+    console.error("Get Patients By Verification Status Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Update Patient Verification Status
+exports.updateVerificationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { IsVerified, UpdatedBy } = req.body;
+    
+    // Get old value for audit log
+    const oldValue = await PatientMaster.findById(id).lean();
+    
+    if (!oldValue) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+    
+    // Update verification status
+    const patient = await PatientMaster.findByIdAndUpdate(
+      id,
+      { IsVerified, UpdatedBy },
+      { new: true }
+    )
+    .populate("Nationality", "StationName")
+    .populate("CountryOfResidence", "StationName")
+    .populate("State", "StationName")
+    .populate("InsuranceProvider", "LookupValue")
+    .populate("Relationship", "LookupValue")
+    .populate("CreatedBy", "AssetName")
+    .populate("UpdatedBy", "AssetName");
+
+    // Create audit log for verification update
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldValue,
+      patient.toObject(),
+      id,
+    );
+    
+    return res.json(__requestResponse("200", __SUCCESS, patient));
+  } catch (error) {
+    console.error("Update Verification Status Error:", error.message);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };

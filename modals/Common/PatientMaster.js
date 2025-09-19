@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 // PATIENT MASTER SCHEMA
 const PatientMasterSchema = new Schema(
   {
-    // SYSTEM GENERATED FIELDS
+    // 1. PATIENT ID (Country Specific)
     PatientId: {
       type: String,
       unique: true,
@@ -23,13 +23,41 @@ const PatientMasterSchema = new Schema(
       },
     },
 
-    // PATIENT PERSONAL INFORMATION
+    // 2. PHONE NUMBER WITH ISD CODE (Format: +91838383930)
+    PhoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      validate: {
+        validator: function(v) {
+          // Validate international phone number format
+          return /^\+[1-9]\d{1,14}$/.test(v);
+        },
+        message: 'Phone number must be in international format (e.g., +91838383930)'
+      }
+    },
+    
+    // ISDCode field removed - now included in PhoneNumber
+    // ISDCode: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: "admin_lookups", // From STATION MASTER
+    //   required: true,
+    // },
+
+    // 3. IS VERIFIED (Yes/No)
+    IsVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // 4. NAME
     Name: {
       type: String,
       required: true,
       trim: true,
     },
 
+    // 5. AGE/DOB
     Age: {
       type: Number,
     },
@@ -38,37 +66,119 @@ const PatientMasterSchema = new Schema(
       type: Date,
     },
 
+    // 6. GENDER (Male/Female/Other)
     Gender: {
       type: String,
       required: true,
       enum: ["Male", "Female", "Other"],
     },
 
+    // 7. NATIONALITY (STATION MASTER where ORG UNIT LEVEL = "Country")
     Nationality: {
+      type: Schema.Types.ObjectId,
+      // ref: "station_master",
+      ref: "admin_lookups", 
+      required: true,
+    },
+
+    // 8. COUNTRY OF RESIDENCE (STATION MASTER where ORG UNIT LEVEL = "Country")
+    CountryOfResidence: {
+      type: Schema.Types.ObjectId,
+      // ref: "station_master",
+      ref: "admin_lookups",
+      required: true,
+    },
+
+    // 9. ADDRESS LINE 1
+    AddressLine1: {
       type: String,
       required: true,
       trim: true,
     },
 
-    // REFERRING DOCTOR INFORMATION
-    ReferringDoctorId: {
-      type: Schema.Types.ObjectId,
-      ref: "asset_master",
-    },
-
-    // CONTACT INFORMATION
-    PhoneNumber: {
+    // 10. ADDRESS LINE 2
+    AddressLine2: {
       type: String,
-    //   required: true,
+      trim: true,
     },
 
+    // 11. STATE (STATION MASTER)
+    State: {
+      type: Schema.Types.ObjectId,
+      ref: "station_master",
+    },
+
+    // 12. CITY
+    City: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    // 13. POSTAL CODE
+    PostalCode: {
+      type: String,
+      trim: true,
+    },
+
+    // 14. INSURANCE PROVIDER (Drop-Down ADMIN LOOKUPS)
+    InsuranceProvider: {
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups", 
+    },
+
+    // 15. INSURANCE POLICY NUMBER
+    InsurancePolicyNumber: {
+      type: String,
+      trim: true,
+    },
+
+    // 16. VALID UPTO (Date)
+    InsuranceValidUpto: {
+      type: Date,
+    },
+
+    // 17. EMAIL ADDRESS (optional)
     EmailAddress: {
       type: String,
       trim: true,
       lowercase: true,
     },
 
-    // STATUS AND METADATA
+    // 18. SECONDARY CONTACT NAME
+    SecondaryContactName: {
+      type: String,
+      trim: true,
+    },
+
+    // 19. SECONDARY CONTACT NUMBER (also with ISD code)
+    SecondaryContactNumber: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function(v) {
+          // Allow empty/null or valid international format
+          if (!v || v === '') return true;
+          return /^\+[1-9]\d{1,14}$/.test(v);
+        },
+        message: 'Secondary contact number must be in international format (e.g., +91838383930)'
+      }
+    },
+
+    // 20. RELATIONSHIP (Drop-Down ADMIN LOOKUPS)
+    Relationship: {
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups", 
+    },
+
+    // 21. RECORD CREATED BY (Logged In ASSET ID)
+    CreatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "asset_master",
+      required: true,
+    },
+
+    // SYSTEM FIELDS
     IsActive: {
       type: Boolean,
       default: true,
@@ -79,15 +189,9 @@ const PatientMasterSchema = new Schema(
       default: false,
     },
 
-    // AUDIT TRAIL
-    CreatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "login_master",
-    },
-
     UpdatedBy: {
       type: Schema.Types.ObjectId,
-      ref: "login_master",
+      ref: "asset_master",
     },
   },
   {
@@ -97,11 +201,17 @@ const PatientMasterSchema = new Schema(
 
 // INDEXES FOR PERFORMANCE
 PatientMasterSchema.index({ PatientId: 1 }, { unique: true });
-PatientMasterSchema.index({ Name: 1 });
 PatientMasterSchema.index({ PhoneNumber: 1 });
+PatientMasterSchema.index({ Name: 1 });
 PatientMasterSchema.index({ EmailAddress: 1 });
-PatientMasterSchema.index({ ReferringDoctorId: 1 });
 PatientMasterSchema.index({ IsActive: 1, IsDeleted: 1 });
+PatientMasterSchema.index({ CreatedBy: 1 });
+PatientMasterSchema.index({ Nationality: 1 });
+PatientMasterSchema.index({ CountryOfResidence: 1 });
+PatientMasterSchema.index({ State: 1 });
+PatientMasterSchema.index({ IsVerified: 1 });
+PatientMasterSchema.index({ City: 1 });
+PatientMasterSchema.index({ InsuranceProvider: 1 });
 
 // PRE-SAVE MIDDLEWARE
 PatientMasterSchema.pre("save", function (next) {
@@ -153,11 +263,25 @@ PatientMasterSchema.virtual("DisplayName").get(function () {
   return `${this.Name} (${this.PatientId})`;
 });
 
+PatientMasterSchema.virtual("FullAddress").get(function () {
+  let address = this.AddressLine1;
+  if (this.AddressLine2) address += `, ${this.AddressLine2}`;
+  address += `, ${this.City}`;
+  if (this.PostalCode) address += ` - ${this.PostalCode}`;
+  return address;
+});
+
 // METHODS
 PatientMasterSchema.methods.getContactInfo = function () {
   return {
-    phone: this.PhoneNumber,
-    email: this.EmailAddress || "Not provided",
+    primary: {
+      phone: this.PhoneNumber,
+      email: this.EmailAddress || "Not provided",
+    },
+    secondary: {
+      name: this.SecondaryContactName || "Not provided",
+      phone: this.SecondaryContactNumber || "Not provided",
+    },
   };
 };
 
@@ -181,17 +305,46 @@ PatientMasterSchema.methods.getAge = function () {
   return null;
 };
 
-// STATIC METHODS
-PatientMasterSchema.statics.findByPatientId = function (patientId) {
-  return this.findOne({ PatientId: patientId, IsDeleted: false });
+PatientMasterSchema.methods.getInsuranceStatus = function () {
+  if (!this.InsuranceProvider || !this.InsuranceValidUpto) {
+    return { hasInsurance: false, status: "No Insurance" };
+  }
+  
+  const today = new Date();
+  const validUpto = new Date(this.InsuranceValidUpto);
+  
+  return {
+    hasInsurance: true,
+    status: validUpto > today ? "Active" : "Expired",
+    validUpto: this.InsuranceValidUpto,
+    policyNumber: this.InsurancePolicyNumber,
+  };
 };
 
-PatientMasterSchema.statics.findByDoctor = function (doctorId) {
-  return this.find({
-    ReferringDoctorId: doctorId,
-    IsDeleted: false,
-    IsActive: true,
-  }).sort({ createdAt: -1 });
+// STATIC METHODS
+PatientMasterSchema.statics.findByPatientId = function (patientId) {
+  return this.findOne({ PatientId: patientId, IsDeleted: false })
+    .populate("Nationality", "StationName")
+    .populate("CountryOfResidence", "StationName")
+    .populate("State", "StationName")
+    .populate("InsuranceProvider", "lookup_value")
+    .populate("Relationship", "lookup_value") 
+    .populate("CreatedBy", "AssetName")
+    .populate("ISDCode", "LookupValue");
+};
+
+PatientMasterSchema.statics.findByLocation = function (countryId, stateId) {
+  const filter = { IsDeleted: false, IsActive: true };
+  if (countryId) filter.CountryOfResidence = countryId;
+  if (stateId) filter.State = stateId;
+  
+  return this.find(filter)
+    .populate("Nationality", "StationName")
+    .populate("CountryOfResidence", "StationName")
+    .populate("State", "StationName")
+    .populate("InsuranceProvider", "lookup_value")
+    .populate("Relationship", "lookup_value") 
+    .sort({ createdAt: -1 });
 };
 
 PatientMasterSchema.statics.searchPatients = function (searchTerm) {
@@ -202,9 +355,31 @@ PatientMasterSchema.statics.searchPatients = function (searchTerm) {
       { PatientId: regex },
       { PhoneNumber: regex },
       { EmailAddress: regex },
+      { City: regex },
+      { PostalCode: regex },
     ],
     IsDeleted: false,
-  }).sort({ Name: 1 });
+  })
+    .populate("Nationality", "StationName")
+    .populate("CountryOfResidence", "StationName")
+    .populate("State", "StationName")
+    .populate("InsuranceProvider", "lookup_value")
+    .populate("Relationship", "lookup_value") 
+    .sort({ Name: 1 });
+};
+
+PatientMasterSchema.statics.findByVerificationStatus = function (isVerified) {
+  return this.find({
+    IsVerified: isVerified,
+    IsDeleted: false,
+    IsActive: true,
+  })
+    .populate("Nationality", "StationName")
+    .populate("CountryOfResidence", "StationName")
+    .populate("State", "StationName")
+    .populate("InsuranceProvider", "lookup_value")
+    .populate("Relationship", "lookup_value") 
+    .sort({ createdAt: -1 });
 };
 
 module.exports = mongoose.model("patient_master", PatientMasterSchema);
