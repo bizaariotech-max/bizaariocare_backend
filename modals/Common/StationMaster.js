@@ -15,10 +15,10 @@ const StationSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    CountryGroupId: {
+    CountryGroupId: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "admin_lookups", // dropdown reference
-    },
+    }],
     ISDCode: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "admin_lookups", // dropdown reference

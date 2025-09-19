@@ -91,15 +91,22 @@ const stationValidationSchema = Joi.object({
     "string.empty": "StationName cannot be empty",
   }),
 
-  CountryGroupId: objectIdField(true).messages({
-    "any.required": "CountryGroupId is required",
-    "string.empty": "CountryGroupId cannot be empty",
-  }),
+  // CountryGroupId: objectIdField(true).messages({
+  //   "any.required": "CountryGroupId is required",
+  //   "string.empty": "CountryGroupId cannot be empty",
+  // }),
 
   // ISDCode: Joi.string().required().messages({
   //   "any.required": "ISDCode is required",
   //   "string.empty": "ISDCode cannot be empty",
   // }),
+  CountryGroupId: Joi.array()
+  .items(objectIdField(false))
+  .allow(null)
+  .optional()
+  .messages({
+    "array.base": "CountryGroupId must be an array",
+  }),
   ISDCode: objectIdField(false),
   Currency: objectIdField(false),
   // ISDCode: Joi.string().allow(null, "").optional(),

@@ -76,16 +76,16 @@ const PatientMasterSchema = new Schema(
     // 7. NATIONALITY (STATION MASTER where ORG UNIT LEVEL = "Country")
     Nationality: {
       type: Schema.Types.ObjectId,
-      // ref: "station_master",
-      ref: "admin_lookups", 
+      ref: "station_master",
+      // ref: "admin_lookups", 
       required: true,
     },
 
     // 8. COUNTRY OF RESIDENCE (STATION MASTER where ORG UNIT LEVEL = "Country")
     CountryOfResidence: {
       type: Schema.Types.ObjectId,
-      // ref: "station_master",
-      ref: "admin_lookups",
+      ref: "station_master",
+      // ref: "admin_lookups",
       required: true,
     },
 
@@ -108,12 +108,19 @@ const PatientMasterSchema = new Schema(
       ref: "station_master",
     },
 
+    // // 12. CITY
+    // City: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    // },
+    
     // 12. CITY
     City: {
-      type: String,
-      required: true,
-      trim: true,
+      type: Schema.Types.ObjectId,
+      ref: "station_master",
     },
+
 
     // 13. POSTAL CODE
     PostalCode: {
