@@ -44,11 +44,27 @@ exports.stationList = async (req, res) => {
   try {
     // Handle both req.body and req.query to support GET and POST requests
     const requestData = req.body || req.query || {};
-    const { page = 1, limit = 10, search = "" } = requestData;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      CountryGroupId,
+      OrgUnitLevel,
+      ParentStationId,
+    } = requestData;
 
     const query = {};
     if (search) {
       query.StationName = { $regex: search, $options: "i" };
+    }
+    if (CountryGroupId) {
+      query.CountryGroupId = { $in: CountryGroupId };
+    }
+    if (OrgUnitLevel) {
+      query.OrgUnitLevel = { $in: OrgUnitLevel };
+    }
+    if (ParentStationId) {
+      query.ParentStationId = { $in: ParentStationId };
     }
 
     const total = await Station.countDocuments(query);
@@ -59,8 +75,8 @@ exports.stationList = async (req, res) => {
       .populate("Currency", "lookup_value")
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
-      // .lean();//Use lean() for read-only operations
+      .sort({ createdAt: -1 })
+      .lean(); //Use lean() for read-only operations
 
     return res.json(
       __requestResponse("200", __SUCCESS, {
