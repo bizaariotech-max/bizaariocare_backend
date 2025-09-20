@@ -238,7 +238,7 @@ exports.stationListxxx = async (req, res) => {
   }
 };
 
-//  Station List (with pagination + population)
+//  Station List (with aggregation pipeline)
 exports.stationList = async (req, res) => {
   try {
     // Handle both req.body and req.query to support GET and POST requests
@@ -598,8 +598,8 @@ exports.getStationById = async (req, res) => {
 
     const station = await Station.findById(id)
       .populate("ParentStationId", "StationName")
-      .populate("OrgUnitLevel", "org_unit_type")
-      .populate("CountryGroupId", "country_group_type")
+      .populate("OrgUnitLevel", "lookup_value")
+      .populate("CountryGroupId", "lookup_value")
       .populate("Currency", "lookup_value");
 
     if (!station) {

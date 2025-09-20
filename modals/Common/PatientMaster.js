@@ -334,10 +334,11 @@ PatientMasterSchema.statics.findByPatientId = function (patientId) {
     .populate("Nationality", "StationName")
     .populate("CountryOfResidence", "StationName")
     .populate("State", "StationName")
+    .populate("City", "StationName")
     .populate("InsuranceProvider", "lookup_value")
     .populate("Relationship", "lookup_value") 
     .populate("CreatedBy", "AssetName")
-    .populate("ISDCode", "LookupValue");
+    // .populate("ISDCode", "lookup_value");
 };
 
 PatientMasterSchema.statics.findByLocation = function (countryId, stateId) {
@@ -349,6 +350,7 @@ PatientMasterSchema.statics.findByLocation = function (countryId, stateId) {
     .populate("Nationality", "StationName")
     .populate("CountryOfResidence", "StationName")
     .populate("State", "StationName")
+    .populate("City", "StationName")
     .populate("InsuranceProvider", "lookup_value")
     .populate("Relationship", "lookup_value") 
     .sort({ createdAt: -1 });
@@ -364,12 +366,14 @@ PatientMasterSchema.statics.searchPatients = function (searchTerm) {
       { EmailAddress: regex },
       { City: regex },
       { PostalCode: regex },
+      { State: regex },
     ],
     IsDeleted: false,
   })
     .populate("Nationality", "StationName")
     .populate("CountryOfResidence", "StationName")
     .populate("State", "StationName")
+    .populate("City", "StationName")
     .populate("InsuranceProvider", "lookup_value")
     .populate("Relationship", "lookup_value") 
     .sort({ Name: 1 });
@@ -384,6 +388,7 @@ PatientMasterSchema.statics.findByVerificationStatus = function (isVerified) {
     .populate("Nationality", "StationName")
     .populate("CountryOfResidence", "StationName")
     .populate("State", "StationName")
+    .populate("City", "StationName")
     .populate("InsuranceProvider", "lookup_value")
     .populate("Relationship", "lookup_value") 
     .sort({ createdAt: -1 });

@@ -123,7 +123,7 @@ const contentMasterList = async (req, res) => {
     const total = await ContentMaster.countDocuments(filter);
     const list = await ContentMaster.find(filter)
       .populate("AssetId", "AssetName")
-      .populate("ContentTypeId", "LookupValue")
+      .populate("ContentTypeId", "lookup_value")
       .sort({ _id: -1 })
       .skip(skip)
       .limit(limitNumber);
