@@ -68,8 +68,12 @@ app.use("/api/v1/admin", require("./routers/common/contentMaster.Routes"));
 app.use("/api/v1/admin", require("./routers/common/eventMaster.Routes"));
 
 app.use("/api/v1/admin", require("./routers/common/investigationMaster.Routes"));
-// patient referral
+
+// patient Master
 app.use("/api/v1/admin", require("./routers/common/patientMaster.Routes"));
+
+// patient Profiling referral
+app.use("/api/v1/admin", require("./routers/common/patientProfiling.Routes"));
 
 const server=app.listen(process.env.PORT,()=>
 {

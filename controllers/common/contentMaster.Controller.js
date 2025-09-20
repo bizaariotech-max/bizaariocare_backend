@@ -122,12 +122,21 @@ const contentMasterList = async (req, res) => {
 
     const total = await ContentMaster.countDocuments(filter);
     const list = await ContentMaster.find(filter)
-      .populate("AssetId", "AssetName")
+      // .populate("AssetId", "AssetName Logo ProfilePicture MedicalSpecialties")
+      .populate({
+        path: "AssetId",
+        select: "AssetName Logo ProfilePicture MedicalSpecialties",
+        populate: {
+          path: "MedicalSpecialties",
+          select: "lookup_value"
+        }
+      })
+
       .populate("ContentTypeId", "lookup_value")
       .sort({ _id: -1 })
       .skip(skip)
-      .limit(limitNumber);
-      // .lean();//Use lean() for read-only operations
+      .limit(limitNumber)
+      .lean();//Use lean() for read-only operations
 
     res.json(
       __requestResponse("200", __SUCCESS, {
