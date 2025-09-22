@@ -209,8 +209,24 @@ const PatientReferralSchema = new Schema(
         accuracy: {
           type: Number,
         },
+        // city: { type: String },
+        // state: { type: String },
+        // country: { type: String, default: "India" }
       },
     },
+
+    //  // GeoJSON for geospatial queries (PRIMARY)
+    //  geolocation: {
+    //   type: {
+    //     type: String,
+    //     enum: ["Point"],
+    //     default: "Point"
+    //   },
+    //   coordinates: {
+    //     type: [Number], // [longitude, latitude]
+    //     required: false
+    //   }
+    // },
 
     // REFERRAL TYPE (to determine which conditional fields to show)
     ReferralType: {

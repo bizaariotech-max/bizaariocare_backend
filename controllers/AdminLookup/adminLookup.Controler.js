@@ -49,13 +49,33 @@ exports.lookupList = async (req, res) => {
       return res.json(__requestResponse("501", __NO_LOOKUP_LIST));
     }
 
-    const _list = await TlbLookup.find({
-      lookup_type: { $in: _filters },
-      is_active: true,
-    });
+    // const _list = await TlbLookup.find({
+    //   lookup_type: { $in: _filters },
+    //   is_active: true,
+    // });
 
-    if (_list.length > 0) {
-      return res.json(__requestResponse("200", __SUCCESS, _list));
+    const list = await LookupMaster.find({
+      lookup_type: { $in: req?.body?.lookup_type || [] },
+      ...(mongoose.Types.ObjectId.isValid(req.body?.parent_lookup_id) && {
+        parent_lookup_id: mongoose.Types.ObjectId(req.body?.parent_lookup_id),
+      }),
+      is_active: true,
+    })
+      .populate("parent_lookup_id", "lookup_value")
+      .lean();
+
+    if (list.length == 0) {
+      return res.json(__requestResponse("404", "No Data found"));
+    }
+
+    const transformedList = list.map((item) => ({
+      ...item,
+      parent_lookup_name: item?.parent_lookup_id?.lookup_value || "",
+      parent_lookup_id: item?.parent_lookup_id?._id || "",
+    }));
+
+    if (transformedList.length > 0) {
+      return res.json(__requestResponse("200", __SUCCESS, transformedList));
     } else {
       return res.json(__requestResponse("501", __NO_LOOKUP_LIST));
     }

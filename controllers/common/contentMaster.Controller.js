@@ -131,7 +131,6 @@ const contentMasterList = async (req, res) => {
           select: "lookup_value"
         }
       })
-
       .populate("ContentTypeId", "lookup_value")
       .sort({ _id: -1 })
       .skip(skip)
