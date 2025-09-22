@@ -10,34 +10,43 @@ const {
   addChiefComplaint,
   updateChiefComplaint,
   deleteChiefComplaint,
+  getChiefComplaintsList,
   
   // Medical Summary
   updateMedicalSummary,
   addPastMedication,
+  getMedicalSummaryList,
+  getPastMedicationsList,
   
   // Clinical Findings
   addClinicalFinding,
   updateClinicalFinding,
   deleteClinicalFinding,
+  getClinicalFindingsList,
   
   // Vitals/Physical Examinations
   addVitalExamination,
   updateVitalExamination,
   deleteVitalExamination,
+  getVitalsExaminationsList,
   
   // Diagnostics/Investigations
   addInvestigation,
   updateInvestigation,
   deleteInvestigation,
+  getInvestigationsList,
   
   // Diagnosis
   addDiagnosis,
   updateDiagnosis,
   deleteDiagnosis,
+  getDiagnosisList,
   
   // Treatment to Date
   updateTreatmentToDate,
   addTreatmentMedicine,
+  getTreatmentToDateList,
+  getTreatmentMedicinesList,
   
   // Search and Analytics
   searchBySymptom,
@@ -47,7 +56,10 @@ const {
   // Lookup Helpers
   getLookupsByType,
   getInvestigationsByCategory,
-  getVitalParameters
+  getVitalParameters,
+  checkDocumentSize,
+  // getPatientArchivedData,
+  // archiveOldData
 } = require("../../controllers/common/patientProfiling.Controller");
 
 const {
@@ -85,6 +97,12 @@ router.post("/createPatientProfiling",
 
 // ==================== CHIEF COMPLAINTS ROUTES ====================
 
+// Get Chief Complaints List
+router.get("/getChiefComplaintsList/:patientId", 
+  validatePatientIdParam, 
+  getChiefComplaintsList
+);
+
 // Add Chief Complaint
 router.post("/addChiefComplaint/:patientId", 
   validatePatientIdParam,
@@ -110,6 +128,18 @@ router.delete("/deleteChiefComplaint/:patientId/:complaintId",
 
 // ==================== MEDICAL SUMMARY ROUTES ====================
 
+// Get Medical Summary
+router.get("/getMedicalSummaryList/:patientId", 
+  validatePatientIdParam, 
+  getMedicalSummaryList
+);
+
+// Get Past Medications List
+router.get("/getPastMedicationsList/:patientId", 
+  validatePatientIdParam, 
+  getPastMedicationsList
+);
+
 // Update Medical Summary
 router.put("/updateMedicalSummary/:patientId", 
   validatePatientIdParam,
@@ -125,6 +155,12 @@ router.post("/addPastMedication/:patientId",
 );
 
 // ==================== CLINICAL FINDINGS ROUTES ====================
+
+// Get Clinical Findings List
+router.get("/getClinicalFindingsList/:patientId", 
+  validatePatientIdParam, 
+  getClinicalFindingsList
+);
 
 // Add Clinical Finding
 router.post("/addClinicalFinding/:patientId", 
@@ -151,6 +187,12 @@ router.delete("/deleteClinicalFinding/:patientId/:findingId",
 
 // ==================== VITALS/PHYSICAL EXAMINATIONS ROUTES ====================
 
+// Get Vitals/Physical Examinations List
+router.get("/getVitalsExaminationsList/:patientId", 
+  validatePatientIdParam, 
+  getVitalsExaminationsList
+);
+
 // Add Vital/Physical Examination
 router.post("/addVitalExamination/:patientId", 
   validatePatientIdParam,
@@ -175,6 +217,13 @@ router.delete("/deleteVitalExamination/:patientId/:vitalId",
 );
 
 // ==================== DIAGNOSTICS/INVESTIGATIONS ROUTES ====================
+
+// Get Investigations List
+router.get("/getInvestigationsList/:patientId", 
+  validatePatientIdParam, 
+  getInvestigationsList
+);
+
 
 // Add Investigation
 router.post("/addInvestigation/:patientId", 
@@ -201,6 +250,13 @@ router.delete("/deleteInvestigation/:patientId/:investigationId",
 
 // ==================== DIAGNOSIS ROUTES ====================
 
+// Get Diagnosis List
+router.get("/getDiagnosisList/:patientId", 
+  validatePatientIdParam, 
+  getDiagnosisList
+);
+
+
 // Add Diagnosis
 router.post("/addDiagnosis/:patientId", 
   validatePatientIdParam,
@@ -226,12 +282,26 @@ router.delete("/deleteDiagnosis/:patientId/:diagnosisId",
 
 // ==================== TREATMENT TO DATE ROUTES ====================
 
+// Get Treatment to Date
+router.get("/getTreatmentToDateList/:patientId", 
+  validatePatientIdParam, 
+  getTreatmentToDateList
+);
+
+
 // Update Treatment to Date
 router.put("/updateTreatmentToDate/:patientId", 
   validatePatientIdParam,
   validateTreatmentToDate,
   updateTreatmentToDate
 );
+
+// Get Treatment Medicines List
+router.get("/getTreatmentMedicinesList/:patientId", 
+  validatePatientIdParam, 
+  getTreatmentMedicinesList
+);
+
 
 // Add Treatment Medicine
 router.post("/addTreatmentMedicine/:patientId", 
@@ -273,5 +343,15 @@ router.get("/getInvestigationsByCategory/:categoryId",
 
 // Get Vital Parameters
 router.get("/getVitalParameters", getVitalParameters);
+
+// Add these routes to your existing routes file
+
+// Document size monitoring
+router.get("/size/:patientId",checkDocumentSize);
+
+// // Archive management
+// router.post("/archive/:patientId", archiveOldData);
+// router.get("/archive/:patientId", getPatientArchivedData)
+
 
 module.exports = router;

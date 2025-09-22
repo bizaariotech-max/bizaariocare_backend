@@ -1099,3 +1099,484 @@ exports.getVitalParameters = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+
+// ==================== SECTION LISTING APIS ====================
+
+// Get Chief Complaints List
+exports.getChiefComplaintsList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.ChiefComplaints));
+  } catch (error) {
+    console.error("Get Chief Complaints List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Medical Summary List
+exports.getMedicalSummaryList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.MedicalSummary));
+  } catch (error) {
+    console.error("Get Medical Summary List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Past Medications List
+exports.getPastMedicationsList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.MedicalSummary.PastMedications));
+  } catch (error) {
+    console.error("Get Past Medications List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Clinical Findings List
+exports.getClinicalFindingsList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.ClinicalFindings));
+  } catch (error) {
+    console.error("Get Clinical Findings List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Vitals/Physical Examinations List
+exports.getVitalsExaminationsList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.VitalsPhysicalExaminations));
+  } catch (error) {
+    console.error("Get Vitals Examinations List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Diagnostics/Investigations List
+exports.getInvestigationsList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.DiagnosticsInvestigations));
+  } catch (error) {
+    console.error("Get Investigations List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Diagnosis List
+exports.getDiagnosisList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.Diagnosis));
+  } catch (error) {
+    console.error("Get Diagnosis List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Treatment to Date
+exports.getTreatmentToDateList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.TreatmentToDate));
+  } catch (error) {
+    console.error("Get Treatment To Date List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Treatment Medicines List
+exports.getTreatmentMedicinesList = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, profiling.TreatmentToDate.Medicines));
+  } catch (error) {
+    console.error("Get Treatment Medicines List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== DOCUMENT SIZE MANAGEMENT ====================
+
+// Check Document Size
+exports.checkDocumentSize = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.json(__requestResponse("400", "Invalid Patient ID"));
+    }
+    
+    const profiling = await PatientProfiling.findOne({ 
+      PatientId: patientId, 
+      IsActive: true, 
+      IsDeleted: false 
+    });
+
+    if (!profiling) {
+      return res.json(__requestResponse("404", "Patient profiling not found"));
+    }
+    
+    // Calculate approximate BSON size
+    const bsonSize = JSON.stringify(profiling).length;
+    const mbSize = (bsonSize / (1024 * 1024)).toFixed(2);
+    const percentOfLimit = ((bsonSize / (16 * 1024 * 1024)) * 100).toFixed(2);
+    
+    // Section sizes
+    const sectionSizes = {
+      ChiefComplaints: JSON.stringify(profiling.ChiefComplaints).length,
+      MedicalSummary: JSON.stringify(profiling.MedicalSummary).length,
+      ClinicalFindings: JSON.stringify(profiling.ClinicalFindings).length,
+      VitalsPhysicalExaminations: JSON.stringify(profiling.VitalsPhysicalExaminations).length,
+      DiagnosticsInvestigations: JSON.stringify(profiling.DiagnosticsInvestigations).length,
+      Diagnosis: JSON.stringify(profiling.Diagnosis).length,
+      TreatmentToDate: JSON.stringify(profiling.TreatmentToDate).length
+    };
+    
+    // Convert to MB and calculate percentages
+    Object.keys(sectionSizes).forEach(key => {
+      const sizeInMB = (sectionSizes[key] / (1024 * 1024)).toFixed(4);
+      const percentage = ((sectionSizes[key] / bsonSize) * 100).toFixed(2);
+      sectionSizes[key] = {
+        bytes: sectionSizes[key],
+        mb: sizeInMB,
+        percentage: percentage
+      };
+    });
+    
+    // Recommendations
+    let recommendations = [];
+    if (percentOfLimit > 70) {
+      recommendations.push("Document size is approaching MongoDB's 16MB limit. Consider archiving older data.");
+      
+      // Find largest sections
+      const sortedSections = Object.entries(sectionSizes)
+        .sort((a, b) => b[1].bytes - a[1].bytes);
+      
+      if (sortedSections[0][1].percentage > 30) {
+        recommendations.push(`The ${sortedSections[0][0]} section is taking up ${sortedSections[0][1].percentage}% of document size. Consider archiving older entries.`);
+      }
+    }
+    
+    return res.json(__requestResponse("200", __SUCCESS, {
+      documentSize: {
+        bytes: bsonSize,
+        mb: mbSize,
+        percentOfLimit: percentOfLimit
+      },
+      sectionSizes,
+      recommendations,
+      needsAction: percentOfLimit > 70
+    }));
+  } catch (error) {
+    console.error("Check Document Size Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+
+// // ==================== ARCHIVING SECTION ====================
+
+// // Archive Old Data
+// exports.archiveOldData = async (req, res) => {
+//   try {
+//     const { patientId } = req.params;
+//     const { archiveBeforeDate, sections } = req.body;
+    
+//     if (!mongoose.Types.ObjectId.isValid(patientId)) {
+//       return res.json(__requestResponse("400", "Invalid Patient ID"));
+//     }
+    
+//     const profiling = await PatientProfiling.findOne({ 
+//       PatientId: patientId, 
+//       IsActive: true, 
+//       IsDeleted: false 
+//     });
+
+//     if (!profiling) {
+//       return res.json(__requestResponse("404", "Patient profiling not found"));
+//     }
+    
+//     // Create archive object
+//     const archiveDate = new Date(archiveBeforeDate);
+//     const archiveData = {
+//       PatientId: patientId,
+//       ArchivePeriod: {
+//         StartDate: new Date(0), // Beginning of time
+//         EndDate: archiveDate
+//       },
+//       DiagnosticsInvestigations: [],
+//       ClinicalFindings: [],
+//       VitalsPhysicalExaminations: [],
+//       CreatedBy: req.body.CreatedBy
+//     };
+    
+//     // Move data to archive
+//     if (sections.includes('DiagnosticsInvestigations')) {
+//       // Filter investigations older than archive date
+//       const oldInvestigations = profiling.DiagnosticsInvestigations.filter(
+//         item => new Date(item.CreatedAt) < archiveDate
+//       );
+      
+//       // Add to archive
+//       archiveData.DiagnosticsInvestigations = oldInvestigations;
+      
+//       // Remove from current profile
+//       profiling.DiagnosticsInvestigations = profiling.DiagnosticsInvestigations.filter(
+//         item => new Date(item.CreatedAt) >= archiveDate
+//       );
+//     }
+    
+//     // Similar logic for other sections
+//     if (sections.includes('ClinicalFindings')) {
+//       const oldFindings = profiling.ClinicalFindings.filter(
+//         item => new Date(item.CreatedAt) < archiveDate
+//       );
+      
+//       archiveData.ClinicalFindings = oldFindings;
+      
+//       profiling.ClinicalFindings = profiling.ClinicalFindings.filter(
+//         item => new Date(item.CreatedAt) >= archiveDate
+//       );
+//     }
+    
+//     if (sections.includes('VitalsPhysicalExaminations')) {
+//       const oldVitals = profiling.VitalsPhysicalExaminations.filter(
+//         item => new Date(item.CreatedAt) < archiveDate
+//       );
+      
+//       archiveData.VitalsPhysicalExaminations = oldVitals;
+      
+//       profiling.VitalsPhysicalExaminations = profiling.VitalsPhysicalExaminations.filter(
+//         item => new Date(item.CreatedAt) >= archiveDate
+//       );
+//     }
+    
+//     // Save archive
+//     const archive = new PatientProfilingArchive(archiveData);
+//     await archive.save();
+    
+//     // Save updated profile
+//     await profiling.save();
+    
+//     // Create audit log
+//     await __CreateAuditLog(
+//       "PatientProfiling",
+//       "ARCHIVE",
+//       "MULTIPLE_SECTIONS",
+//       null,
+//       JSON.stringify(sections),
+//       profiling._id,
+//       req.body.CreatedBy,
+//       null
+//     );
+    
+//     return res.json(__requestResponse("200", "Data archived successfully", { 
+//       archivedCount: {
+//         DiagnosticsInvestigations: archiveData.DiagnosticsInvestigations.length,
+//         ClinicalFindings: archiveData.ClinicalFindings.length,
+//         VitalsPhysicalExaminations: archiveData.VitalsPhysicalExaminations.length
+//       }
+//     }));
+//   } catch (error) {
+//     console.error("Archive Patient Data Error:", error.message);
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   }
+// };
+
+// // Get Patient Archived Data
+// exports.getPatientArchivedData = async (req, res) => {
+//   try {
+//     const { patientId } = req.params;
+//     const { startDate, endDate, sections } = req.query;
+    
+//     if (!mongoose.Types.ObjectId.isValid(patientId)) {
+//       return res.json(__requestResponse("400", "Invalid Patient ID"));
+//     }
+    
+//     // Build query
+//     const query = { 
+//       PatientId: patientId,
+//       IsActive: true,
+//       IsDeleted: false
+//     };
+    
+//     // Add date range if provided
+//     if (startDate && endDate) {
+//       query["ArchivePeriod.StartDate"] = { $lte: new Date(endDate) };
+//       query["ArchivePeriod.EndDate"] = { $gte: new Date(startDate) };
+//     }
+    
+//     // Get archives
+//     const archives = await PatientProfilingArchive.find(query)
+//       .sort({ "ArchivePeriod.EndDate": -1 });
+    
+//     // Filter requested sections only
+//     const result = archives.map(archive => {
+//       const filteredArchive = { 
+//         _id: archive._id,
+//         ArchivePeriod: archive.ArchivePeriod
+//       };
+      
+//       if (!sections || sections.includes('DiagnosticsInvestigations')) {
+//         filteredArchive.DiagnosticsInvestigations = archive.DiagnosticsInvestigations;
+//       }
+      
+//       if (!sections || sections.includes('ClinicalFindings')) {
+//         filteredArchive.ClinicalFindings = archive.ClinicalFindings;
+//       }
+      
+//       if (!sections || sections.includes('VitalsPhysicalExaminations')) {
+//         filteredArchive.VitalsPhysicalExaminations = archive.VitalsPhysicalExaminations;
+//       }
+      
+//       return filteredArchive;
+//     });
+    
+//     return res.json(__requestResponse("200", __SUCCESS, result));
+//   } catch (error) {
+//     console.error("Get Patient Archived Data Error:", error.message);
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   }
+// };
