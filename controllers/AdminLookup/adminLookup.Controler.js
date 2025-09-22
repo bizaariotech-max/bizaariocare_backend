@@ -54,8 +54,8 @@ exports.lookupList = async (req, res) => {
     //   is_active: true,
     // });
 
-    const list = await LookupMaster.find({
-      lookup_type: { $in: req?.body?.lookup_type || [] },
+    const list = await TlbLookup.find({
+      lookup_type: { $in: _filters || [] },
       ...(mongoose.Types.ObjectId.isValid(req.body?.parent_lookup_id) && {
         parent_lookup_id: mongoose.Types.ObjectId(req.body?.parent_lookup_id),
       }),
@@ -73,6 +73,8 @@ exports.lookupList = async (req, res) => {
       parent_lookup_name: item?.parent_lookup_id?.lookup_value || "",
       parent_lookup_id: item?.parent_lookup_id?._id || "",
     }));
+
+    // return res.json(__requestResponse("200", __SUCCESS, transformedList));
 
     if (transformedList.length > 0) {
       return res.json(__requestResponse("200", __SUCCESS, transformedList));
