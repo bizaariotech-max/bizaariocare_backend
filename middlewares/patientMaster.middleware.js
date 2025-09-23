@@ -32,16 +32,30 @@ const patientMasterValidationSchema = Joi.object({
   // 1. Patient ID (Auto-generated, not validated in input)
   PatientId: Joi.string().optional(),
 ProfilePic : Joi.string().allow("",null).optional(),
-  // 2. Phone Number with ISD Code (Format: +91838383930)
+  // // 2. Phone Number with ISD Code (Format: +91838383930)
+  // PhoneNumber: Joi.string()
+  //   .pattern(/^\+[1-9]\d{1,14}$/)
+  //   .required()
+  //   .messages({
+  //     "string.pattern.base": "Phone number must be in international format (e.g., +91838383930) with country code",
+  //     "any.required": "Phone number is required"
+  //   }),
+
+  
+  // 2. Phone Number (without ISD code)
   PhoneNumber: Joi.string()
-    .pattern(/^\+[1-9]\d{1,14}$/)
+    .pattern(/^[0-9]{5,15}$/)
     .required()
     .messages({
-      "string.pattern.base": "Phone number must be in international format (e.g., +91838383930) with country code",
+      "string.pattern.base": "Phone number must contain only digits (5-15 digits)",
       "any.required": "Phone number is required"
     }),
 
-  // ISDCode field removed as it's now part of PhoneNumber
+  // ISD Code (separate field)
+  ISDCode: objectIdField(true).messages({
+    "any.required": "ISD code is required"
+  }),
+
 
   // 3. Is Verified
   IsVerified: Joi.boolean().optional().default(false),
@@ -191,14 +205,27 @@ ProfilePic : Joi.string().allow("",null).optional(),
       "string.max": "Secondary contact name cannot exceed 100 characters"
     }),
 
-  // 19. Secondary Contact Number (also with ISD code)
+  // // 19. Secondary Contact Number (also with ISD code)
+  // SecondaryContactNumber: Joi.string()
+  //   .pattern(/^\+[1-9]\d{1,14}$/)
+  //   .optional()
+  //   .allow("", null)
+  //   .messages({
+  //     "string.pattern.base": "Secondary contact number must be in international format (e.g., +91838383930) with country code"
+  //   }),
+
+  
+  // 19. Secondary Contact Number (without ISD code)
   SecondaryContactNumber: Joi.string()
-    .pattern(/^\+[1-9]\d{1,14}$/)
+    .pattern(/^[0-9]{5,15}$/)
     .optional()
     .allow("", null)
     .messages({
-      "string.pattern.base": "Secondary contact number must be in international format (e.g., +91838383930) with country code"
+      "string.pattern.base": "Secondary contact number must contain only digits (5-15 digits)"
     }),
+
+  // Secondary ISD Code
+  SecondaryISDCode: objectIdField(false),
 
   // 20. Relationship (Admin Lookups)
   Relationship: objectIdField(false),
