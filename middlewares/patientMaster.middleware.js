@@ -31,7 +31,7 @@ const patientMasterValidationSchema = Joi.object({
 
   // 1. Patient ID (Auto-generated, not validated in input)
   PatientId: Joi.string().optional(),
-
+ProfilePic : Joi.string().allow("",null).optional(),
   // 2. Phone Number with ISD Code (Format: +91838383930)
   PhoneNumber: Joi.string()
     .pattern(/^\+[1-9]\d{1,14}$/)

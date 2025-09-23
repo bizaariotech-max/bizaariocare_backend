@@ -185,6 +185,12 @@ const PatientMasterSchema = new Schema(
       required: true,
     },
 
+     // new field
+     ProfilePic:{
+      type: String,
+      default: "",
+    },
+
     // SYSTEM FIELDS
     IsActive: {
       type: Boolean,
