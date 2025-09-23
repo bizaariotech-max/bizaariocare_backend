@@ -1,57 +1,57 @@
-const express = require("express");
-const router = express.Router();
+// const express = require("express");
+// const router = express.Router();
 
-const {
-  test,
-  SavePatient,
-  patientList,
-  getPatientById,
-  getPatientByPatientId,
-  deletePatient,
-  getPatientsByLocation,
-  searchPatients,
-  getPatientsByVerificationStatus,
-  updateVerificationStatus,
-} = require("../../controllers/common/patientMaster.Controller");
+// const {
+//   test,
+//   SavePatient,
+//   patientList,
+//   getPatientById,
+//   getPatientByPatientId,
+//   deletePatient,
+//   getPatientsByLocation,
+//   searchPatients,
+//   getPatientsByVerificationStatus,
+//   updateVerificationStatus,
+// } = require("../../controllers/common/patientMaster.Controller");
 
-const {
-  validateSavePatient,
-  validatePatientList,
-} = require("../../middlewares/patientMaster.middleware");
+// const {
+//   validateSavePatient,
+//   validatePatientList,
+// } = require("../../middlewares/patientMaster.middleware");
 
-// Test Route
-router.get("/test", test);
+// // Test Route
+// router.get("/test", test);
 
-// Save Patient (Add/Edit)
-router.post("/savePatient", validateSavePatient, SavePatient);
+// // Save Patient (Add/Edit)
+// router.post("/savePatient", validateSavePatient, SavePatient);
 
-// Patient List with filters and pagination
-router.get("/patientList", validatePatientList, patientList);
-router.post("/patientList", validatePatientList, patientList);
+// // Patient List with filters and pagination
+// router.get("/patientList", validatePatientList, patientList);
+// router.post("/patientList", validatePatientList, patientList);
 
-// Get Patient by MongoDB ID
-router.get("/getPatient/:id", getPatientById);
+// // Get Patient by MongoDB ID
+// router.get("/getPatient/:id", getPatientById);
 
-// Get Patient by PatientId
-router.get("/getPatientByPatientId/:patientId", getPatientByPatientId);
+// // Get Patient by PatientId
+// router.get("/getPatientByPatientId/:patientId", getPatientByPatientId);
 
-// Delete Patient (Soft Delete)
-router.delete("/deletePatient/:id", deletePatient);
+// // Delete Patient (Soft Delete)
+// router.delete("/deletePatient/:id", deletePatient);
 
-// Get Patients by Location (Country and/or State)
-router.get("/getPatientsByLocation/:countryId", getPatientsByLocation);
-router.get("/getPatientsByLocation/:countryId/:stateId", getPatientsByLocation);
+// // Get Patients by Location (Country and/or State)
+// router.get("/getPatientsByLocation/:countryId", getPatientsByLocation);
+// router.get("/getPatientsByLocation/:countryId/:stateId", getPatientsByLocation);
 
-// Search Patients
-router.get("/searchPatients/:searchTerm", searchPatients);
+// // Search Patients
+// router.get("/searchPatients/:searchTerm", searchPatients);
 
-// Get Patients by Verification Status
-router.get(
-  "/getPatientsByVerificationStatus/:isVerified",
-  getPatientsByVerificationStatus
-);
+// // Get Patients by Verification Status
+// router.get(
+//   "/getPatientsByVerificationStatus/:isVerified",
+//   getPatientsByVerificationStatus
+// );
 
-// Update Patient Verification Status
-router.put("/updateVerificationStatus/:id", updateVerificationStatus);
+// // Update Patient Verification Status
+// router.put("/updateVerificationStatus/:id", updateVerificationStatus);
 
-module.exports = router;
+// module.exports = router;

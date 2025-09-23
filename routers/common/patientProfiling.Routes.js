@@ -1,357 +1,357 @@
-const express = require("express");
-const router = express.Router();
+// const express = require("express");
+// const router = express.Router();
 
-const {
-  test,
-  getPatientProfiling,
-  createPatientProfiling,
+// const {
+//   test,
+//   getPatientProfiling,
+//   createPatientProfiling,
   
-  // Chief Complaints
-  addChiefComplaint,
-  updateChiefComplaint,
-  deleteChiefComplaint,
-  getChiefComplaintsList,
+//   // Chief Complaints
+//   addChiefComplaint,
+//   updateChiefComplaint,
+//   deleteChiefComplaint,
+//   getChiefComplaintsList,
   
-  // Medical Summary
-  updateMedicalSummary,
-  addPastMedication,
-  getMedicalSummaryList,
-  getPastMedicationsList,
+//   // Medical Summary
+//   updateMedicalSummary,
+//   addPastMedication,
+//   getMedicalSummaryList,
+//   getPastMedicationsList,
   
-  // Clinical Findings
-  addClinicalFinding,
-  updateClinicalFinding,
-  deleteClinicalFinding,
-  getClinicalFindingsList,
+//   // Clinical Findings
+//   addClinicalFinding,
+//   updateClinicalFinding,
+//   deleteClinicalFinding,
+//   getClinicalFindingsList,
   
-  // Vitals/Physical Examinations
-  addVitalExamination,
-  updateVitalExamination,
-  deleteVitalExamination,
-  getVitalsExaminationsList,
+//   // Vitals/Physical Examinations
+//   addVitalExamination,
+//   updateVitalExamination,
+//   deleteVitalExamination,
+//   getVitalsExaminationsList,
   
-  // Diagnostics/Investigations
-  addInvestigation,
-  updateInvestigation,
-  deleteInvestigation,
-  getInvestigationsList,
+//   // Diagnostics/Investigations
+//   addInvestigation,
+//   updateInvestigation,
+//   deleteInvestigation,
+//   getInvestigationsList,
   
-  // Diagnosis
-  addDiagnosis,
-  updateDiagnosis,
-  deleteDiagnosis,
-  getDiagnosisList,
+//   // Diagnosis
+//   addDiagnosis,
+//   updateDiagnosis,
+//   deleteDiagnosis,
+//   getDiagnosisList,
   
-  // Treatment to Date
-  updateTreatmentToDate,
-  addTreatmentMedicine,
-  getTreatmentToDateList,
-  getTreatmentMedicinesList,
+//   // Treatment to Date
+//   updateTreatmentToDate,
+//   addTreatmentMedicine,
+//   getTreatmentToDateList,
+//   getTreatmentMedicinesList,
   
-  // Search and Analytics
-  searchBySymptom,
-  searchByDiagnosis,
-  searchByMedication,
+//   // Search and Analytics
+//   searchBySymptom,
+//   searchByDiagnosis,
+//   searchByMedication,
   
-  // Lookup Helpers
-  getLookupsByType,
-  getInvestigationsByCategory,
-  getVitalParameters,
-  checkDocumentSize,
-  // getPatientArchivedData,
-  // archiveOldData
-} = require("../../controllers/common/patientProfiling.Controller");
+//   // Lookup Helpers
+//   getLookupsByType,
+//   getInvestigationsByCategory,
+//   getVitalParameters,
+//   checkDocumentSize,
+//   // getPatientArchivedData,
+//   // archiveOldData
+// } = require("../../controllers/common/patientProfiling.Controller");
 
-const {
-  validateCreatePatientProfiling,
-  validateChiefComplaint,
-  validateMedicalSummary,
-  validatePastMedication,
-  validateClinicalFinding,
-  validateVitalExamination,
-  validateInvestigation,
-  validateDiagnosis,
-  validateTreatmentToDate,
-  validateTreatmentMedicine,
-  validatePatientIdParam,
-  validateObjectIdParam,
-  validateDeleteRequest
-} = require("../../middlewares/patientProfiling.middleware");
+// const {
+//   validateCreatePatientProfiling,
+//   validateChiefComplaint,
+//   validateMedicalSummary,
+//   validatePastMedication,
+//   validateClinicalFinding,
+//   validateVitalExamination,
+//   validateInvestigation,
+//   validateDiagnosis,
+//   validateTreatmentToDate,
+//   validateTreatmentMedicine,
+//   validatePatientIdParam,
+//   validateObjectIdParam,
+//   validateDeleteRequest
+// } = require("../../middlewares/patientProfiling.middleware");
 
-// Test Route
-router.get("/test", test);
+// // Test Route
+// router.get("/test", test);
 
-// ==================== MAIN PROFILING ROUTES ====================
+// // ==================== MAIN PROFILING ROUTES ====================
 
-// Get Complete Patient Profiling by Patient ID
-router.get("/getPatientProfiling/:patientId", 
-  validatePatientIdParam, 
-  getPatientProfiling
-);
+// // Get Complete Patient Profiling by Patient ID
+// router.get("/getPatientProfiling/:patientId", 
+//   validatePatientIdParam, 
+//   getPatientProfiling
+// );
 
-// Create New Patient Profiling
-router.post("/createPatientProfiling", 
-  validateCreatePatientProfiling, 
-  createPatientProfiling
-);
+// // Create New Patient Profiling
+// router.post("/createPatientProfiling", 
+//   validateCreatePatientProfiling, 
+//   createPatientProfiling
+// );
 
-// ==================== CHIEF COMPLAINTS ROUTES ====================
+// // ==================== CHIEF COMPLAINTS ROUTES ====================
 
-// Get Chief Complaints List
-router.get("/getChiefComplaintsList/:patientId", 
-  validatePatientIdParam, 
-  getChiefComplaintsList
-);
+// // Get Chief Complaints List
+// router.get("/getChiefComplaintsList/:patientId", 
+//   validatePatientIdParam, 
+//   getChiefComplaintsList
+// );
 
-// Add Chief Complaint
-router.post("/addChiefComplaint/:patientId", 
-  validatePatientIdParam,
-  validateChiefComplaint,
-  addChiefComplaint
-);
+// // Add Chief Complaint
+// router.post("/addChiefComplaint/:patientId", 
+//   validatePatientIdParam,
+//   validateChiefComplaint,
+//   addChiefComplaint
+// );
 
-// Update Chief Complaint
-router.put("/updateChiefComplaint/:patientId/:complaintId", 
-  validatePatientIdParam,
-  validateObjectIdParam('complaintId'),
-  validateChiefComplaint,
-  updateChiefComplaint
-);
+// // Update Chief Complaint
+// router.put("/updateChiefComplaint/:patientId/:complaintId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('complaintId'),
+//   validateChiefComplaint,
+//   updateChiefComplaint
+// );
 
-// Delete Chief Complaint
-router.delete("/deleteChiefComplaint/:patientId/:complaintId", 
-  validatePatientIdParam,
-  validateObjectIdParam('complaintId'),
-  validateDeleteRequest,
-  deleteChiefComplaint
-);
+// // Delete Chief Complaint
+// router.delete("/deleteChiefComplaint/:patientId/:complaintId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('complaintId'),
+//   validateDeleteRequest,
+//   deleteChiefComplaint
+// );
 
-// ==================== MEDICAL SUMMARY ROUTES ====================
+// // ==================== MEDICAL SUMMARY ROUTES ====================
 
-// Get Medical Summary
-router.get("/getMedicalSummaryList/:patientId", 
-  validatePatientIdParam, 
-  getMedicalSummaryList
-);
+// // Get Medical Summary
+// router.get("/getMedicalSummaryList/:patientId", 
+//   validatePatientIdParam, 
+//   getMedicalSummaryList
+// );
 
-// Get Past Medications List
-router.get("/getPastMedicationsList/:patientId", 
-  validatePatientIdParam, 
-  getPastMedicationsList
-);
+// // Get Past Medications List
+// router.get("/getPastMedicationsList/:patientId", 
+//   validatePatientIdParam, 
+//   getPastMedicationsList
+// );
 
-// Update Medical Summary
-router.put("/updateMedicalSummary/:patientId", 
-  validatePatientIdParam,
-  validateMedicalSummary,
-  updateMedicalSummary
-);
+// // Update Medical Summary
+// router.put("/updateMedicalSummary/:patientId", 
+//   validatePatientIdParam,
+//   validateMedicalSummary,
+//   updateMedicalSummary
+// );
 
-// Add Past Medication
-router.post("/addPastMedication/:patientId", 
-  validatePatientIdParam,
-  validatePastMedication,
-  addPastMedication
-);
+// // Add Past Medication
+// router.post("/addPastMedication/:patientId", 
+//   validatePatientIdParam,
+//   validatePastMedication,
+//   addPastMedication
+// );
 
-// ==================== CLINICAL FINDINGS ROUTES ====================
+// // ==================== CLINICAL FINDINGS ROUTES ====================
 
-// Get Clinical Findings List
-router.get("/getClinicalFindingsList/:patientId", 
-  validatePatientIdParam, 
-  getClinicalFindingsList
-);
+// // Get Clinical Findings List
+// router.get("/getClinicalFindingsList/:patientId", 
+//   validatePatientIdParam, 
+//   getClinicalFindingsList
+// );
 
-// Add Clinical Finding
-router.post("/addClinicalFinding/:patientId", 
-  validatePatientIdParam,
-  validateClinicalFinding,
-  addClinicalFinding
-);
+// // Add Clinical Finding
+// router.post("/addClinicalFinding/:patientId", 
+//   validatePatientIdParam,
+//   validateClinicalFinding,
+//   addClinicalFinding
+// );
 
-// Update Clinical Finding
-router.put("/updateClinicalFinding/:patientId/:findingId", 
-  validatePatientIdParam,
-  validateObjectIdParam('findingId'),
-  validateClinicalFinding,
-  updateClinicalFinding
-);
+// // Update Clinical Finding
+// router.put("/updateClinicalFinding/:patientId/:findingId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('findingId'),
+//   validateClinicalFinding,
+//   updateClinicalFinding
+// );
 
-// Delete Clinical Finding
-router.delete("/deleteClinicalFinding/:patientId/:findingId", 
-  validatePatientIdParam,
-  validateObjectIdParam('findingId'),
-  validateDeleteRequest,
-  deleteClinicalFinding
-);
+// // Delete Clinical Finding
+// router.delete("/deleteClinicalFinding/:patientId/:findingId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('findingId'),
+//   validateDeleteRequest,
+//   deleteClinicalFinding
+// );
 
-// ==================== VITALS/PHYSICAL EXAMINATIONS ROUTES ====================
+// // ==================== VITALS/PHYSICAL EXAMINATIONS ROUTES ====================
 
-// Get Vitals/Physical Examinations List
-router.get("/getVitalsExaminationsList/:patientId", 
-  validatePatientIdParam, 
-  getVitalsExaminationsList
-);
+// // Get Vitals/Physical Examinations List
+// router.get("/getVitalsExaminationsList/:patientId", 
+//   validatePatientIdParam, 
+//   getVitalsExaminationsList
+// );
 
-// Add Vital/Physical Examination
-router.post("/addVitalExamination/:patientId", 
-  validatePatientIdParam,
-  validateVitalExamination,
-  addVitalExamination
-);
+// // Add Vital/Physical Examination
+// router.post("/addVitalExamination/:patientId", 
+//   validatePatientIdParam,
+//   validateVitalExamination,
+//   addVitalExamination
+// );
 
-// Update Vital/Physical Examination
-router.put("/updateVitalExamination/:patientId/:vitalId", 
-  validatePatientIdParam,
-  validateObjectIdParam('vitalId'),
-  validateVitalExamination,
-  updateVitalExamination
-);
+// // Update Vital/Physical Examination
+// router.put("/updateVitalExamination/:patientId/:vitalId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('vitalId'),
+//   validateVitalExamination,
+//   updateVitalExamination
+// );
 
-// Delete Vital/Physical Examination
-router.delete("/deleteVitalExamination/:patientId/:vitalId", 
-  validatePatientIdParam,
-  validateObjectIdParam('vitalId'),
-  validateDeleteRequest,
-  deleteVitalExamination
-);
+// // Delete Vital/Physical Examination
+// router.delete("/deleteVitalExamination/:patientId/:vitalId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('vitalId'),
+//   validateDeleteRequest,
+//   deleteVitalExamination
+// );
 
-// ==================== DIAGNOSTICS/INVESTIGATIONS ROUTES ====================
+// // ==================== DIAGNOSTICS/INVESTIGATIONS ROUTES ====================
 
-// Get Investigations List
-router.get("/getInvestigationsList/:patientId", 
-  validatePatientIdParam, 
-  getInvestigationsList
-);
-
-
-// Add Investigation
-router.post("/addInvestigation/:patientId", 
-  validatePatientIdParam,
-  validateInvestigation,
-  addInvestigation
-);
-
-// Update Investigation
-router.put("/updateInvestigation/:patientId/:investigationId", 
-  validatePatientIdParam,
-  validateObjectIdParam('investigationId'),
-  validateInvestigation,
-  updateInvestigation
-);
-
-// Delete Investigation
-router.delete("/deleteInvestigation/:patientId/:investigationId", 
-  validatePatientIdParam,
-  validateObjectIdParam('investigationId'),
-  validateDeleteRequest,
-  deleteInvestigation
-);
-
-// ==================== DIAGNOSIS ROUTES ====================
-
-// Get Diagnosis List
-router.get("/getDiagnosisList/:patientId", 
-  validatePatientIdParam, 
-  getDiagnosisList
-);
+// // Get Investigations List
+// router.get("/getInvestigationsList/:patientId", 
+//   validatePatientIdParam, 
+//   getInvestigationsList
+// );
 
 
-// Add Diagnosis
-router.post("/addDiagnosis/:patientId", 
-  validatePatientIdParam,
-  validateDiagnosis,
-  addDiagnosis
-);
+// // Add Investigation
+// router.post("/addInvestigation/:patientId", 
+//   validatePatientIdParam,
+//   validateInvestigation,
+//   addInvestigation
+// );
 
-// Update Diagnosis
-router.put("/updateDiagnosis/:patientId/:diagnosisId", 
-  validatePatientIdParam,
-  validateObjectIdParam('diagnosisId'),
-  validateDiagnosis,
-  updateDiagnosis
-);
+// // Update Investigation
+// router.put("/updateInvestigation/:patientId/:investigationId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('investigationId'),
+//   validateInvestigation,
+//   updateInvestigation
+// );
 
-// Delete Diagnosis
-router.delete("/deleteDiagnosis/:patientId/:diagnosisId", 
-  validatePatientIdParam,
-  validateObjectIdParam('diagnosisId'),
-  validateDeleteRequest,
-  deleteDiagnosis
-);
+// // Delete Investigation
+// router.delete("/deleteInvestigation/:patientId/:investigationId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('investigationId'),
+//   validateDeleteRequest,
+//   deleteInvestigation
+// );
 
-// ==================== TREATMENT TO DATE ROUTES ====================
+// // ==================== DIAGNOSIS ROUTES ====================
 
-// Get Treatment to Date
-router.get("/getTreatmentToDateList/:patientId", 
-  validatePatientIdParam, 
-  getTreatmentToDateList
-);
-
-
-// Update Treatment to Date
-router.put("/updateTreatmentToDate/:patientId", 
-  validatePatientIdParam,
-  validateTreatmentToDate,
-  updateTreatmentToDate
-);
-
-// Get Treatment Medicines List
-router.get("/getTreatmentMedicinesList/:patientId", 
-  validatePatientIdParam, 
-  getTreatmentMedicinesList
-);
+// // Get Diagnosis List
+// router.get("/getDiagnosisList/:patientId", 
+//   validatePatientIdParam, 
+//   getDiagnosisList
+// );
 
 
-// Add Treatment Medicine
-router.post("/addTreatmentMedicine/:patientId", 
-  validatePatientIdParam,
-  validateTreatmentMedicine,
-  addTreatmentMedicine
-);
+// // Add Diagnosis
+// router.post("/addDiagnosis/:patientId", 
+//   validatePatientIdParam,
+//   validateDiagnosis,
+//   addDiagnosis
+// );
 
-// ==================== SEARCH AND ANALYTICS ROUTES ====================
+// // Update Diagnosis
+// router.put("/updateDiagnosis/:patientId/:diagnosisId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('diagnosisId'),
+//   validateDiagnosis,
+//   updateDiagnosis
+// );
 
-// Search Patients by Symptom
-router.get("/searchBySymptom/:symptomId", 
-  validateObjectIdParam('symptomId'),
-  searchBySymptom
-);
+// // Delete Diagnosis
+// router.delete("/deleteDiagnosis/:patientId/:diagnosisId", 
+//   validatePatientIdParam,
+//   validateObjectIdParam('diagnosisId'),
+//   validateDeleteRequest,
+//   deleteDiagnosis
+// );
 
-// Search Patients by Diagnosis
-router.get("/searchByDiagnosis/:diagnosisId", 
-  validateObjectIdParam('diagnosisId'),
-  searchByDiagnosis
-);
+// // ==================== TREATMENT TO DATE ROUTES ====================
 
-// Search Patients by Medication
-router.get("/searchByMedication/:medicationId", 
-  validateObjectIdParam('medicationId'),
-  searchByMedication
-);
-
-// ==================== LOOKUP HELPER ROUTES ====================
-
-// Get Lookups by Type
-router.get("/getLookupsByType/:lookupType", getLookupsByType);
-
-// Get Investigations by Category
-router.get("/getInvestigationsByCategory/:categoryId", 
-  validateObjectIdParam('categoryId'),
-  getInvestigationsByCategory
-);
-
-// Get Vital Parameters
-router.get("/getVitalParameters", getVitalParameters);
-
-// Add these routes to your existing routes file
-
-// Document size monitoring
-router.get("/size/:patientId",checkDocumentSize);
-
-// // Archive management
-// router.post("/archive/:patientId", archiveOldData);
-// router.get("/archive/:patientId", getPatientArchivedData)
+// // Get Treatment to Date
+// router.get("/getTreatmentToDateList/:patientId", 
+//   validatePatientIdParam, 
+//   getTreatmentToDateList
+// );
 
 
-module.exports = router;
+// // Update Treatment to Date
+// router.put("/updateTreatmentToDate/:patientId", 
+//   validatePatientIdParam,
+//   validateTreatmentToDate,
+//   updateTreatmentToDate
+// );
+
+// // Get Treatment Medicines List
+// router.get("/getTreatmentMedicinesList/:patientId", 
+//   validatePatientIdParam, 
+//   getTreatmentMedicinesList
+// );
+
+
+// // Add Treatment Medicine
+// router.post("/addTreatmentMedicine/:patientId", 
+//   validatePatientIdParam,
+//   validateTreatmentMedicine,
+//   addTreatmentMedicine
+// );
+
+// // ==================== SEARCH AND ANALYTICS ROUTES ====================
+
+// // Search Patients by Symptom
+// router.get("/searchBySymptom/:symptomId", 
+//   validateObjectIdParam('symptomId'),
+//   searchBySymptom
+// );
+
+// // Search Patients by Diagnosis
+// router.get("/searchByDiagnosis/:diagnosisId", 
+//   validateObjectIdParam('diagnosisId'),
+//   searchByDiagnosis
+// );
+
+// // Search Patients by Medication
+// router.get("/searchByMedication/:medicationId", 
+//   validateObjectIdParam('medicationId'),
+//   searchByMedication
+// );
+
+// // ==================== LOOKUP HELPER ROUTES ====================
+
+// // Get Lookups by Type
+// router.get("/getLookupsByType/:lookupType", getLookupsByType);
+
+// // Get Investigations by Category
+// router.get("/getInvestigationsByCategory/:categoryId", 
+//   validateObjectIdParam('categoryId'),
+//   getInvestigationsByCategory
+// );
+
+// // Get Vital Parameters
+// router.get("/getVitalParameters", getVitalParameters);
+
+// // Add these routes to your existing routes file
+
+// // Document size monitoring
+// router.get("/size/:patientId",checkDocumentSize);
+
+// // // Archive management
+// // router.post("/archive/:patientId", archiveOldData);
+// // router.get("/archive/:patientId", getPatientArchivedData)
+
+
+// module.exports = router;

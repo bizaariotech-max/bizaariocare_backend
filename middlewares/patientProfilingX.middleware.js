@@ -16,6 +16,18 @@ const severityGradeField = () => {
   });
 };
 
+// ==================== MAIN PROFILING VALIDATIONS ====================
+
+// Create Patient Profiling Validation
+const createPatientProfilingSchema = Joi.object({
+  PatientId: objectIdField(true).messages({
+    "any.required": "Patient ID is required"
+  }),
+  CreatedBy: objectIdField(true).messages({
+    "any.required": "Created by is required"
+  })
+});
+
 // ==================== CHIEF COMPLAINTS VALIDATIONS ====================
 
 // Chief Complaint Validation
@@ -33,8 +45,8 @@ const chiefComplaintSchema = Joi.object({
   Dosage: objectIdField(),
   Frequency: objectIdField(),
   CurrentTherapies: objectIdField(),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
@@ -60,8 +72,8 @@ const pastMedicationSchema = Joi.object({
   Dosage: objectIdField(),
   Frequency: objectIdField(),
   Therapies: objectIdField(),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
@@ -77,22 +89,22 @@ const clinicalFindingSchema = Joi.object({
   }),
   SeverityGrade: severityGradeField().optional(),
   AggravatingFactors: Joi.array().items(objectIdField()).optional(),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
 // ==================== VITALS/PHYSICAL EXAMINATIONS VALIDATIONS ====================
 
-// Vital Validation
-const vitalSchema = Joi.object({
+// Vital Examination Validation
+const vitalExaminationSchema = Joi.object({
   Parameter: objectIdField(true).messages({
     "any.required": "Parameter is required"
   }),
   Value: Joi.number().optional(),
   Abnormalities: Joi.array().items(Joi.string().trim()).optional(),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
@@ -113,8 +125,8 @@ const investigationSchema = Joi.object({
   GoogleDriveURL: Joi.string().uri().optional().allow("").messages({
     "string.uri": "Google Drive URL must be a valid URL"
   }),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
@@ -127,15 +139,15 @@ const diagnosisSchema = Joi.object({
   }),
   TypeOfDiagnosis: objectIdField().optional(),
   ClinicalNote: Joi.string().trim().optional().allow(""),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
+  UpdatedBy: objectIdField(true).messages({
+    "any.required": "Updated by is required"
   })
 });
 
-// ==================== TREATMENT VALIDATIONS ====================
+// ==================== TREATMENT TO DATE VALIDATIONS ====================
 
-// Treatment Validation
-const treatmentSchema = Joi.object({
+// Treatment to Date Validation
+const treatmentToDateSchema = Joi.object({
   SurgeryProcedure: Joi.array().items(objectIdField()).optional(),
   Therapy: Joi.array().items(objectIdField()).optional(),
   LifestyleInterventions: Joi.array().items(objectIdField()).optional(),
@@ -153,32 +165,16 @@ const treatmentMedicineSchema = Joi.object({
   }),
   Dosage: objectIdField().optional(),
   Frequency: objectIdField().optional(),
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
-  })
-});
-
-// ==================== COMMON VALIDATIONS ====================
-
-// Delete Request Validation
-const deleteRequestSchema = Joi.object({
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required for deletion"
+    "any.required": "Updated by is required"
   })
 });
 
 // ==================== MIDDLEWARE FUNCTIONS ====================
 
-// Validate Patient ID Parameter
-exports.validatePatientIdParam = (req, res, next) => {
-  const patientIdSchema = Joi.object({
-    patientId: objectIdField(true).messages({
-      "any.required": "Patient ID is required",
-      "string.pattern.base": "Invalid Patient ID format"
-    })
-  });
-
-  const { error } = patientIdSchema.validate(req.params);
+// Validate Create Patient Profiling
+exports.validateCreatePatientProfiling = (req, res, next) => {
+  const { error } = createPatientProfilingSchema.validate(req.body);
   if (error) {
     return res.json(__requestResponse("400", {
       errorType: "Validation Error",
@@ -186,27 +182,6 @@ exports.validatePatientIdParam = (req, res, next) => {
     }));
   }
   next();
-};
-
-// Validate Generic Object ID Parameter
-exports.validateObjectIdParam = (paramName) => {
-  return (req, res, next) => {
-    const schema = Joi.object({
-      [paramName]: objectIdField(true).messages({
-        "any.required": `${paramName} is required`,
-        "string.pattern.base": `Invalid ${paramName} format`
-      })
-    });
-
-    const { error } = schema.validate({ [paramName]: req.params[paramName] });
-    if (error) {
-      return res.json(__requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". ")
-      }));
-    }
-    next();
-  };
 };
 
 // Validate Chief Complaint
@@ -257,9 +232,9 @@ exports.validateClinicalFinding = (req, res, next) => {
   next();
 };
 
-// Validate Vital
-exports.validateVital = (req, res, next) => {
-  const { error } = vitalSchema.validate(req.body);
+// Validate Vital Examination
+exports.validateVitalExamination = (req, res, next) => {
+  const { error } = vitalExaminationSchema.validate(req.body);
   if (error) {
     return res.json(__requestResponse("400", {
       errorType: "Validation Error",
@@ -293,9 +268,9 @@ exports.validateDiagnosis = (req, res, next) => {
   next();
 };
 
-// Validate Treatment
-exports.validateTreatment = (req, res, next) => {
-  const { error } = treatmentSchema.validate(req.body);
+// Validate Treatment to Date
+exports.validateTreatmentToDate = (req, res, next) => {
+  const { error } = treatmentToDateSchema.validate(req.body);
   if (error) {
     return res.json(__requestResponse("400", {
       errorType: "Validation Error",
@@ -317,13 +292,42 @@ exports.validateTreatmentMedicine = (req, res, next) => {
   next();
 };
 
-// Validate Delete Request
-exports.validateDeleteRequest = (req, res, next) => {
-  const { error } = deleteRequestSchema.validate(req.body);
-  if (error) {
+// Validate Patient ID Parameter
+exports.validatePatientIdParam = (req, res, next) => {
+  const { patientId } = req.params;
+  
+  if (!patientId || !/^[0-9a-fA-F]{24}$/.test(patientId)) {
     return res.json(__requestResponse("400", {
       errorType: "Validation Error",
-      error: error.details.map((d) => d.message).join(". ")
+      error: "Invalid Patient ID format"
+    }));
+  }
+  next();
+};
+
+// Validate ObjectId Parameter
+exports.validateObjectIdParam = (paramName) => {
+  return (req, res, next) => {
+    const paramValue = req.params[paramName];
+    
+    if (!paramValue || !/^[0-9a-fA-F]{24}$/.test(paramValue)) {
+      return res.json(__requestResponse("400", {
+        errorType: "Validation Error",
+        error: `Invalid ${paramName} format`
+      }));
+    }
+    next();
+  };
+};
+
+// Validate Delete Request (requires UpdatedBy in body)
+exports.validateDeleteRequest = (req, res, next) => {
+  const { UpdatedBy } = req.body;
+  
+  if (!UpdatedBy || !/^[0-9a-fA-F]{24}$/.test(UpdatedBy)) {
+    return res.json(__requestResponse("400", {
+      errorType: "Validation Error",
+      error: "Valid UpdatedBy field is required for delete operations"
     }));
   }
   next();
