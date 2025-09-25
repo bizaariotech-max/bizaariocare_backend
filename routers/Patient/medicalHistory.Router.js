@@ -15,9 +15,7 @@ const { validateMedicalHistory, validateMedicalHistoryStatus } = require("../../
 router.get("/test", test);
 
 // Create/Update Medical History
-router.post("/saveMedicalHistory",
-  //  validateMedicalHistory,
-    saveMedicalHistory);
+router.post("/saveMedicalHistory", validateMedicalHistory, saveMedicalHistory);
 
 // Get Medical History List with filters and pagination
 router.post("/listMedicalHistory", medicalHistoryList);

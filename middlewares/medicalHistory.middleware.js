@@ -150,26 +150,35 @@ exports.validateMedicalHistory = (req, res, next) => {
     // _id: Joi.string(),
     _id: objectIdField(false),
     PatientId: objectIdField(true),
-    DoctorHospitalInfo: doctorHospitalInfoSchema,
-    ChiefComplaints: Joi.array().items(chiefComplaintSchema),
-    ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema),
-    MedicinesPrescribed: medicinesPrescribedSchema,
-    Therapies: Joi.array().items(therapySchema),
-    SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema),
-    Status: Joi.string().valid(
-      "Active",
-      "Ongoing",
-      "In-Treatment",
-      "Monitoring",
-      "Chronic",
-      "Resolved",
-      "Cured"
-    ).default("Active"),
+    // DoctorHospitalInfo: doctorHospitalInfoSchema,
+    // ChiefComplaints: Joi.array().items(chiefComplaintSchema),
+    // ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema),
+    // MedicinesPrescribed: medicinesPrescribedSchema,
+    // Therapies: Joi.array().items(therapySchema),
+    // SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema),
+    DoctorHospitalInfo: doctorHospitalInfoSchema.optional(), // optional
+    ChiefComplaints: Joi.array().items(chiefComplaintSchema).optional(), //optional
+    ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema).optional(), //  optional
+    MedicinesPrescribed: medicinesPrescribedSchema.optional(), // optional
+    Therapies: Joi.array().items(therapySchema).optional(), //  optional
+    SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema).optional(),
+    Status: Joi.string()
+      .valid(
+        "Active",
+        "Ongoing",
+        "In-Treatment",
+        "Monitoring",
+        "Chronic",
+        "Resolved",
+        "Cured",
+        "Past" //past ilness
+      )
+      .default("Active"),
     Notes: Joi.string().trim(),
     IsActive: Joi.boolean().default(true),
     IsDeleted: Joi.boolean().default(false),
     CreatedBy: objectIdField(true),
-    UpdatedBy: objectIdField(false)
+    UpdatedBy: objectIdField(false),
   });
 
   const { error } = schema.validate(req.body);
