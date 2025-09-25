@@ -73,7 +73,10 @@ app.use("/api/v1/admin", require("./routers/common/investigationMaster.Routes"))
 // patient Master
 app.use("/api/v1/admin", require("./routers/Patient/patientMaster.Routes"));
 // patient Profiling
-app.use("/api/v1/admin/patientprofiling", require("./routers/Patient/patientProfiling.Routes"));
+// app.use("/api/v1/admin/patientprofiling", require("./routers/Patient/patientProfiling.Routes"));
+
+app.use("/api/v1/admin/medicalHistory", require("./routers/Patient/medicalHistory.Router"));
+
 // patient Referral
 app.use("/api/v1/admin/patientreferral", require("./routers/Patient/patientReferral.Routes"));
 
