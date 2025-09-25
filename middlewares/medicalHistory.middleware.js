@@ -11,7 +11,6 @@ const mongoose = require("mongoose");
 //   return value;
 // });
 
-
 const objectIdField = (isRequired = false) => {
   let schema = Joi.string().custom((value, helpers) => {
     // Convert empty string to null to prevent MongoDB cast errors
@@ -35,7 +34,6 @@ const objectIdField = (isRequired = false) => {
   }
 };
 
-
 // Validation for Medical History Status
 exports.validateMedicalHistoryStatus = (req, res, next) => {
   const schema = Joi.object({
@@ -43,15 +41,17 @@ exports.validateMedicalHistoryStatus = (req, res, next) => {
       .valid(
         "Active",
         "Ongoing",
-        "In-Treatment",// treatment to date
+        "In-Treatment", // treatment to date
         "Monitoring",
         "Chronic",
         "Resolved",
         "Cured",
-        "Past"//past ilness
+        "Past" //past ilness
       )
       .required(),
-    UpdatedBy: objectIdField(true),
+    UpdatedBy: objectIdField(true).messages({
+      "any.required": "UpdatedBy is required",
+    }),
   });
 
   const { error } = schema.validate(req.body);
@@ -60,7 +60,10 @@ exports.validateMedicalHistoryStatus = (req, res, next) => {
       // __requestResponse("400", error.details[0].message.replace(/['"]/g, ""))
       __requestResponse("400", {
         errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". ").replace(/['"]/g, ""),
+        error: error.details
+          .map((d) => d.message)
+          .join(". ")
+          .replace(/['"]/g, ""),
       })
     );
   }
@@ -72,7 +75,9 @@ exports.validateMedicalHistory = (req, res, next) => {
   // Schema for Duration
   const durationSchema = Joi.object({
     Value: Joi.number().min(0),
-    Unit: objectIdField(true),
+    Unit: objectIdField(true).messages({
+      "any.required": "Unit is required",
+    }),
   });
 
   // Schema for Doctor/Hospital Info
@@ -82,51 +87,81 @@ exports.validateMedicalHistory = (req, res, next) => {
     DoctorNumber: Joi.string().trim(),
     HospitalName: Joi.string().trim(),
     HospitalLocation: Joi.string().trim(),
-    MedicalSpeciality: objectIdField(true),
+    MedicalSpeciality: objectIdField(true).messages({
+      "any.required": "MedicalSpeciality is required",
+    }),
   });
 
   // Schema for Chief Complaints
   const chiefComplaintSchema = Joi.object({
-    Symptoms: Joi.array().items(objectIdField(true)),
+    Symptoms: Joi.array().items(
+      objectIdField(true).messages({
+        "any.required": "Unit is required",
+      })
+    ),
     Duration: durationSchema,
-    SeverityGrade: objectIdField(true),
-    AggravatingFactors: Joi.array().items(objectIdField(true))
+    SeverityGrade: objectIdField(true).messages({
+      "any.required": "SeverityGrade is required",
+    }),
+    AggravatingFactors: Joi.array().items(
+      objectIdField(true).messages({
+        "any.required": "AggravatingFactors is required",
+      })
+    ),
   });
 
   // Schema for Clinical Diagnosis
   const clinicalDiagnosisSchema = Joi.object({
     Date: Joi.date(),
-    InvestigationCategory: objectIdField(true),
-    Investigation: objectIdField(true),
-    Abnormalities: Joi.array().items(objectIdField(true)),
+    InvestigationCategory: objectIdField(true).messages({
+      "any.required": "InvestigationCategory is required",
+    }),
+    Investigation: objectIdField(true).messages({
+      "any.required": "Investigation is required",
+    }),
+    Abnormalities: Joi.array().items(
+      objectIdField(true).messages({
+        "any.required": "Abnormalities is required",
+      })
+    ),
     ReportUrl: Joi.string().trim(),
-    InterpretationUrl: Joi.string().trim()
+    InterpretationUrl: Joi.string().trim(),
   });
 
   // Schema for Medicine
   const medicineSchema = Joi.object({
-    MedicineName: objectIdField(true),
-    Dosage: objectIdField(true),
-    DurationInDays: Joi.number().min(0)
+    MedicineName: objectIdField(true).messages({
+      "any.required": "MedicineName is required",
+    }),
+    Dosage: objectIdField(true).messages({
+      "any.required": "Dosage is required",
+    }),
+    DurationInDays: Joi.number().min(0),
   });
 
   // Schema for Medicines Prescribed
   const medicinesPrescribedSchema = Joi.object({
     Medicines: Joi.array().items(medicineSchema),
     RecoveryCycle: durationSchema,
-    PrescriptionUrls: Joi.array().items(Joi.string().trim())
+    PrescriptionUrls: Joi.array().items(Joi.string().trim()),
   });
 
   // Schema for Therapy
   const therapySchema = Joi.object({
-    TherapyName: objectIdField(true),
-    PatientResponse: objectIdField(true)
+    TherapyName: objectIdField(true).messages({
+      "any.required": "TherapyName is required",
+    }),
+    PatientResponse: objectIdField(true).messages({
+      "any.required": "PatientResponse is required",
+    }),
   });
 
   // Schema for Recovery Cycle
   const recoveryCycleSchema = Joi.object({
     Value: Joi.number().min(0),
-    Unit: objectIdField(true)
+    Unit: objectIdField(true).messages({
+      "any.required": "Unit is required",
+    }),
   });
 
   // Schema for Surgery/Procedure
@@ -135,21 +170,33 @@ exports.validateMedicalHistory = (req, res, next) => {
     HospitalClinicName: Joi.string().trim(),
     SurgeonName: Joi.string().trim(),
     SurgeonNumber: Joi.string().trim(),
-    MedicalSpeciality: objectIdField(true),
-    SurgeryProcedureName: objectIdField(true),
-    AnaesthesiaType: objectIdField(true),
+    MedicalSpeciality: objectIdField(true).messages({
+      "any.required": "MedicalSpeciality is required",
+    }),
+    SurgeryProcedureName: objectIdField(true).messages({
+      "any.required": "SurgeryProcedureName is required",
+    }),
+    AnaesthesiaType: objectIdField(true).messages({
+      "any.required": "AnaesthesiaType is required",
+    }),
     BloodTransfusionNeeded: Joi.boolean().default(false),
     RecoveryCycle: recoveryCycleSchema,
-    PostSurgeryComplications: Joi.array().items(objectIdField(true)),
+    PostSurgeryComplications: Joi.array().items(
+      objectIdField(true).messages({
+        "any.required": "PostSurgery Complications is required",
+      })
+    ),
     // SurgeryReportUrls: Joi.array().items(Joi.string().trim())
-    DischargeSummaryUrlNote: Joi.string().trim().allow("",null),
+    DischargeSummaryUrlNote: Joi.string().trim().allow("", null),
   });
 
   // Main schema for Medical History
   const schema = Joi.object({
     // _id: Joi.string(),
     _id: objectIdField(false),
-    PatientId: objectIdField(true),
+    PatientId: objectIdField(true).messages({
+      "any.required": "PatientId is required",
+    }),
     // DoctorHospitalInfo: doctorHospitalInfoSchema,
     // ChiefComplaints: Joi.array().items(chiefComplaintSchema),
     // ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema),
@@ -177,7 +224,9 @@ exports.validateMedicalHistory = (req, res, next) => {
     Notes: Joi.string().trim(),
     IsActive: Joi.boolean().default(true),
     IsDeleted: Joi.boolean().default(false),
-    CreatedBy: objectIdField(true),
+    CreatedBy: objectIdField(true).messages({
+      "any.required": "CreatedBy is required",
+    }),
     UpdatedBy: objectIdField(false),
   });
 
@@ -187,7 +236,10 @@ exports.validateMedicalHistory = (req, res, next) => {
       // __requestResponse("400", error.details[0].message.replace(/['"]/g, ""))
       __requestResponse("400", {
         errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". ").replace(/['"]/g, ""),
+        error: error.details
+          .map((d) => d.message)
+          .join(". ")
+          .replace(/['"]/g, ""),
       })
     );
   }
