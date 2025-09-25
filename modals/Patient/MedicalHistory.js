@@ -131,54 +131,70 @@ const TherapySchema = new Schema({
 // Form 6 - Surgery/Procedure (Add More supported)
 const SurgeryProcedureSchema = new Schema({
   Date: {
-    type: Date
+    type: Date,
   },
-  HospitalClinicName: { // Hospital/Clinic Name
+  HospitalClinicName: {
+    // Hospital/Clinic Name
     type: String,
-    trim: true
+    trim: true,
   },
   SurgeonName: {
     type: String,
-    trim: true
+    trim: true,
   },
   SurgeonNumber: {
     type: String,
-    trim: true
+    trim: true,
   },
-  MedicalSpeciality: { // lookup_type: "SURGICAL_SPECIALITY"
+  MedicalSpeciality: {
+    // lookup_type: "SURGICAL_SPECIALITY"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  SurgeryProcedureName: { // lookup_type: "PROCEDURE"
+  SurgeryProcedureName: {
+    // lookup_type: "PROCEDURE"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  BloodTransfusionNeeded: { // Was a Blood Transfusion Needed? Yes/No
+  BloodTransfusionNeeded: {
+    // Was a Blood Transfusion Needed? Yes/No
     type: Boolean,
-    default: false
+    default: false,
   },
-  AnaesthesiaType: { // lookup_type: "ANAESTHESIA_TYPE" (General/Local)
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+  // AnaesthesiaType: { // lookup_type: "ANAESTHESIA_TYPE" (General/Local)
+  //   type: Schema.Types.ObjectId,
+  //   ref: "admin_lookups"
+  // },
+  AnaesthesiaType: {
+    type: String,
+    enum: [
+      "General", // General Anaesthesia
+      "Local", // Local Anaesthesia
+    ],
   },
   RecoveryCycle: {
     Value: {
       type: Number,
-      min: 0
+      min: 0,
     },
-    Unit: { // lookup_type: "DURATION_UNIT"
+    Unit: {
+      // lookup_type: "DURATION_UNIT"
       type: Schema.Types.ObjectId,
-      ref: "admin_lookups"
-    }
+      ref: "admin_lookups",
+    },
   },
-  PostSurgeryComplications: [{ // lookup_type: "POST_SURGERY_COMPLICATION" (Bubble)
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
-  }],
-  DischargeSummaryUrlNote: { // Upload Discharge Summary/Note
+  PostSurgeryComplications: [
+    {
+      // lookup_type: "POST_SURGERY_COMPLICATION" (Bubble)
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups",
+    },
+  ],
+  DischargeSummaryUrlNote: {
+    // Upload Discharge Summary/Note
     type: String,
-    trim: true
-  }
+    trim: true,
+  },
 });
 
 // Main Medical History Schema
@@ -236,13 +252,13 @@ const MedicalHistorySchema = new Schema(
       type: String,
       enum: [
         "Active", // Currently active illness
-        "Ongoing", // Continuing treatment -current 
+        "Ongoing", // Continuing treatment -current
         "In-Treatment", // Under active treatment - Treatment To Date
         "Monitoring", // Under observation
         "Chronic", // Long-term condition
         "Resolved", // Illness has been resolved
         "Cured", // Completely cured
-        "Past" // Past Illness
+        "Past", // Past Illness
       ],
       default: "Active",
       index: true,
@@ -299,50 +315,61 @@ const MedicalHistorySchema = new Schema(
 );
 
 // Virtual to check if illness is past or present
-MedicalHistorySchema.virtual('IsPastIllness').get(function() {
-  return ['Resolved', 'Cured' ,"Past"].includes(this.Status);
+MedicalHistorySchema.virtual("IsPastIllness").get(function () {
+  return ["Resolved", "Cured", "Past"].includes(this.Status);
 });
 
-MedicalHistorySchema.virtual('IsPresentIllness').get(function() {
-  return ['Active', 'Ongoing', 'In-Treatment', 'Monitoring', 'Chronic'].includes(this.Status);
+MedicalHistorySchema.virtual("IsPresentIllness").get(function () {
+  return [
+    "Active",
+    "Ongoing",
+    "In-Treatment",
+    "Monitoring",
+    "Chronic",
+  ].includes(this.Status);
 });
 
 // Indexes for better query performance
 MedicalHistorySchema.index({ PatientId: 1, Status: 1 });
 MedicalHistorySchema.index({ PatientId: 1, createdAt: -1 });
 MedicalHistorySchema.index({ PatientId: 1, IsDeleted: 1 });
-MedicalHistorySchema.index({ 'DoctorHospitalInfo.Date': -1 });
+MedicalHistorySchema.index({ "DoctorHospitalInfo.Date": -1 });
 MedicalHistorySchema.index({ Status: 1 });
 
 // Static method to find by patient with all lookups populated
-MedicalHistorySchema.statics.findByPatient = function(patientId, includeDeleted = false) {
+MedicalHistorySchema.statics.findByPatient = function (
+  patientId,
+  includeDeleted = false
+) {
   const query = { PatientId: patientId };
   if (!includeDeleted) {
     query.IsDeleted = false;
   }
-  return this.find(query)
-    .populate('DoctorHospitalInfo.MedicalSpeciality', 'lookup_value')
-    .populate('ChiefComplaints.Symptoms', 'lookup_value')
-    .populate('ChiefComplaints.Duration.Unit', 'lookup_value')
-    .populate('ChiefComplaints.SeverityGrade', 'lookup_value')
-    .populate('ChiefComplaints.AggravatingFactors', 'lookup_value')
-    .populate('ClinicalDiagnoses.InvestigationCategory', 'lookup_value')
-    .populate('ClinicalDiagnoses.Investigation', 'lookup_value')
-    .populate('ClinicalDiagnoses.Abnormalities', 'lookup_value')
-    .populate('MedicinesPrescribed.Medicines.MedicineName', 'lookup_value')
-    .populate('MedicinesPrescribed.Medicines.Dosage', 'lookup_value')
-    .populate('MedicinesPrescribed.RecoveryCycle.Unit', 'lookup_value')
-    .populate('Therapies.TherapyName', 'lookup_value')
-    .populate('Therapies.PatientResponse', 'lookup_value')
-    .populate('SurgeriesProcedures.MedicalSpeciality', 'lookup_value')
-    .populate('SurgeriesProcedures.SurgeryProcedureName', 'lookup_value')
-    .populate('SurgeriesProcedures.AnaesthesiaType', 'lookup_value')
-    .populate('SurgeriesProcedures.RecoveryCycle.Unit', 'lookup_value')
-    .populate('SurgeriesProcedures.PostSurgeryComplications', 'lookup_value')
-    .populate('PatientId', 'Name PatientId PhoneNumber')
-    .populate('CreatedBy', 'Name')
-    .populate('UpdatedBy', 'Name')
-    .sort({ createdAt: -1 });
+  return (
+    this.find(query)
+      .populate("DoctorHospitalInfo.MedicalSpeciality", "lookup_value")
+      .populate("ChiefComplaints.Symptoms", "lookup_value")
+      .populate("ChiefComplaints.Duration.Unit", "lookup_value")
+      .populate("ChiefComplaints.SeverityGrade", "lookup_value")
+      .populate("ChiefComplaints.AggravatingFactors", "lookup_value")
+      .populate("ClinicalDiagnoses.InvestigationCategory", "lookup_value")
+      .populate("ClinicalDiagnoses.Investigation", "lookup_value")
+      .populate("ClinicalDiagnoses.Abnormalities", "lookup_value")
+      .populate("MedicinesPrescribed.Medicines.MedicineName", "lookup_value")
+      .populate("MedicinesPrescribed.Medicines.Dosage", "lookup_value")
+      .populate("MedicinesPrescribed.RecoveryCycle.Unit", "lookup_value")
+      .populate("Therapies.TherapyName", "lookup_value")
+      .populate("Therapies.PatientResponse", "lookup_value")
+      .populate("SurgeriesProcedures.MedicalSpeciality", "lookup_value")
+      .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value")
+      // .populate('SurgeriesProcedures.AnaesthesiaType', 'lookup_value')
+      .populate("SurgeriesProcedures.RecoveryCycle.Unit", "lookup_value")
+      .populate("SurgeriesProcedures.PostSurgeryComplications", "lookup_value")
+      .populate("PatientId", "Name PatientId PhoneNumber")
+      .populate("CreatedBy", "Name")
+      .populate("UpdatedBy", "Name")
+      .sort({ createdAt: -1 })
+  );
 };
 
 // Method to update status
