@@ -101,8 +101,12 @@ exports.validateMedicalHistory = async (req, res, next) => {
       })
     ),
     Duration: durationSchema,
-    SeverityGrade: objectIdField(true).messages({
+    // SeverityGrade: objectIdField(true).messages({
+    //   "any.required": "SeverityGrade is required",
+    // }),
+    SeverityGrade: Joi.string().valid(1, 2, 3, 4, 5, 6).required().messages({
       "any.required": "SeverityGrade is required",
+      "any.only": "SeverityGrade must be one of 1, 2, 3, 4, 5, 6",
     }),
     AggravatingFactors: Joi.array().items(
       objectIdField(true).messages({

@@ -58,18 +58,22 @@ const chiefComplaintSchema = Joi.object({
       })
   ),
   Duration: durationSchema,
-  SeverityGrade: Joi.string()
-    .custom((value, helpers) => {
-      if (!mongoose.Types.ObjectId.isValid(value)) {
-        return helpers.error("any.invalid");
-      }
-      return value;
-    })
-    .required()
-    .messages({
-      "any.required": "Severity Grade is required",
-      "any.invalid": "Invalid Severity Grade ObjectId format",
-    }),
+  // SeverityGrade: Joi.string()
+  //   .custom((value, helpers) => {
+  //     if (!mongoose.Types.ObjectId.isValid(value)) {
+  //       return helpers.error("any.invalid");
+  //     }
+  //     return value;
+  //   })
+  //   .required()
+  //   .messages({
+  //     "any.required": "Severity Grade is required",
+  //     "any.invalid": "Invalid Severity Grade ObjectId format",
+  //   }),
+  SeverityGrade: Joi.string().valid(1, 2, 3, 4, 5, 6).required().messages({
+    "any.required": "SeverityGrade is required",
+    "any.only": "SeverityGrade must be one of 1, 2, 3, 4, 5, 6",
+  }),
   AggravatingFactors: Joi.array().items(
     Joi.string()
       .custom((value, helpers) => {

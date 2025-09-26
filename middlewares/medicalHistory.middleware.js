@@ -46,7 +46,11 @@ const doctorHospitalInfoSchema = Joi.object({
 const chiefComplaintSchema = Joi.object({
   Symptoms: Joi.array().items(createObjectIdValidator("Symptom")),
   Duration: durationSchema,
-  SeverityGrade: createObjectIdValidator("Severity Grade"),
+  // SeverityGrade: createObjectIdValidator("Severity Grade"),
+  SeverityGrade: Joi.string().valid(1, 2, 3, 4, 5, 6).required().messages({
+    "any.required": "SeverityGrade is required",
+    "any.only": "SeverityGrade must be one of 1, 2, 3, 4, 5, 6",
+  }),
   AggravatingFactors: Joi.array().items(
     createObjectIdValidator("Aggravating Factor")
   ),
@@ -84,7 +88,8 @@ const medicinesPrescribedSchema = Joi.object({
 // Schema for Therapy
 const therapySchema = Joi.object({
   TherapyName: createObjectIdValidator("Therapy Name"),
-  PatientResponse: createObjectIdValidator("Patient Response"),
+  // PatientResponse: createObjectIdValidator("Patient Response"),
+  PatientResponse: Joi.string().trim(),
 });
 
 // Schema for Recovery Cycle

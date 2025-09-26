@@ -30,102 +30,139 @@ const DoctorHospitalInfoSchema = new Schema({
 
 // Form 2 - Chief Complaints (Add More supported)
 const ChiefComplaintSchema = new Schema({
-  Symptoms: [{ // lookup_type: "SYMPTOM" 
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
-  }],
+  Symptoms: [
+    {
+      // lookup_type: "SYMPTOM"
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups",
+    },
+  ],
   Duration: {
     Value: {
       type: Number,
-      min: 0
+      min: 0,
     },
-    Unit: { // lookup_type: "DURATION_UNIT"
+    Unit: {
+      // lookup_type: "DURATION_UNIT"
       type: Schema.Types.ObjectId,
-      ref: "admin_lookups"
-    }
+      ref: "admin_lookups",
+    },
   },
-  SeverityGrade: { // lookup_type: "SEVERITY_GRADE"
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+  // SeverityGrade: { // lookup_type: "SEVERITY_GRADE"
+  //   type: Schema.Types.ObjectId,
+  //   ref: "admin_lookups"
+  // },
+  SeverityGrade: {
+    type: String,
+    enum: [1, 2, 3, 4, 5, 6],
+    required: true,
   },
-  AggravatingFactors: [{ // lookup_type: "AGGRAVATING_FACTOR"
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
-  }]
+
+  AggravatingFactors: [
+    {
+      // lookup_type: "AGGRAVATING_FACTOR"
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups",
+    },
+  ],
 });
 
 // Form 3 - Clinical Diagnosis (Add More supported)
 const ClinicalDiagnosisSchema = new Schema({
   Date: {
-    type: Date
+    type: Date,
   },
-  InvestigationCategory: { // lookup_type: "INVESTIGATION_CATEGORY"
+  InvestigationCategory: {
+    // lookup_type: "INVESTIGATION_CATEGORY"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  Investigation: { // lookup_type: "INVESTIGATION"
+  Investigation: {
+    // lookup_type: "INVESTIGATION"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  Abnormalities: [{ // lookup_type: "ABNORMALITY"
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
-  }],
-  ReportUrl: { // Upload Report
+  Abnormalities: [
+    {
+      // lookup_type: "ABNORMALITY"
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups",
+    },
+  ],
+  ReportUrl: {
+    // Upload Report
     type: String,
-    trim: true
+    trim: true,
   },
-  InterpretationUrl: { // Upload Interpretation
+  InterpretationUrl: {
+    // Upload Interpretation
     type: String,
-    trim: true
-  }
+    trim: true,
+  },
 });
 
 // Form 4a - Medicine Schema (Add More supported)
 const MedicineSchema = new Schema({
-  MedicineName: { // lookup_type: "MEDICINE"
+  MedicineName: {
+    // lookup_type: "MEDICINE"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  Dosage: { // lookup_type: "DOSAGE"
+  Dosage: {
+    // lookup_type: "DOSAGE"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  DurationInDays: { // Duration (Days)
+  DurationInDays: {
+    // Duration (Days)
     type: Number,
-    min: 0
-  }
+    min: 0,
+  },
 });
 
 // Form 4b - Medicines Prescribed with Recovery Cycle
-const MedicinesPrescribedSchema = new Schema({
-  Medicines: [MedicineSchema],
-  RecoveryCycle: { // Recovery Cycle (Number) Drop Down
-    Value: {
-      type: Number,
-      min: 0
+const MedicinesPrescribedSchema = new Schema(
+  {
+    Medicines: [MedicineSchema],
+    RecoveryCycle: {
+      // Recovery Cycle (Number) Drop Down
+      Value: {
+        type: Number,
+        min: 0,
+      },
+      Unit: {
+        // lookup_type: "DURATION_UNIT" (Days, Weeks, Months)
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
     },
-    Unit: { // lookup_type: "DURATION_UNIT" (Days, Weeks, Months)
-      type: Schema.Types.ObjectId,
-      ref: "admin_lookups"
-    }
+    PrescriptionUrls: [
+      {
+        // Upload Prescriptions (multiple)
+        type: String,
+        trim: true,
+      },
+    ],
   },
-  PrescriptionUrls: [{ // Upload Prescriptions (multiple)
-    type: String,
-    trim: true
-  }]
-}, { _id: false });
+  { _id: false }
+);
 
 // Form 5 - Therapy(ies) (Add More supported)
 const TherapySchema = new Schema({
-  TherapyName: { // lookup_type: "THERAPY"
+  TherapyName: {
+    // lookup_type: "THERAPY"
     type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
+    ref: "admin_lookups",
   },
-  PatientResponse: { // lookup_type: "PATIENT_RESPONSE" (One Response for each therapy)
-    type: Schema.Types.ObjectId,
-    ref: "admin_lookups"
-  }
+  // PatientResponse: {
+  //   // lookup_type: "PATIENT_RESPONSE" (One Response for each therapy)
+  //   type: Schema.Types.ObjectId,
+  //   ref: "admin_lookups",
+  // },
+  PatientResponse: {
+    type: String,
+    // enum: ["Excellent", "Good", "Fair", "Poor", "No Improvement"],
+  },
 });
 
 // Form 6 - Surgery/Procedure (Add More supported)
@@ -359,7 +396,7 @@ MedicalHistorySchema.statics.findByPatient = function (
       .populate("MedicinesPrescribed.Medicines.Dosage", "lookup_value")
       .populate("MedicinesPrescribed.RecoveryCycle.Unit", "lookup_value")
       .populate("Therapies.TherapyName", "lookup_value")
-      .populate("Therapies.PatientResponse", "lookup_value")
+      // .populate("Therapies.PatientResponse", "lookup_value")
       .populate("SurgeriesProcedures.MedicalSpeciality", "lookup_value")
       .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value")
       // .populate('SurgeriesProcedures.AnaesthesiaType', 'lookup_value')
