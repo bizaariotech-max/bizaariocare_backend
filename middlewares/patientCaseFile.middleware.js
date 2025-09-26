@@ -52,6 +52,16 @@ const patientCaseFileSchema = Joi.object({
     .allow(null, "")
     .optional(),
 
+  MedicalSpeciality: Joi.string()
+    .custom((value, helpers) => {
+      if (value && !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error("any.invalid");
+      }
+      return value;
+    })
+    .allow(null, "")
+    .optional(),
+
   DoctorName: Joi.string().trim().allow("", null).optional(),
 
   HospitalId: Joi.string()
@@ -65,7 +75,10 @@ const patientCaseFileSchema = Joi.object({
     .optional(),
 
   HospitalName: Joi.string().trim().allow("", null).optional(),
-  Date: Joi.date().optional(),
+  Date: Joi.date().required().messages({
+    "any.required": "Date is required",
+    "date.base": "Invalid date format",
+  }),
   Notes: Joi.string().trim().allow("", null).optional(),
   IsActive: Joi.boolean().default(true),
   IsDeleted: Joi.boolean().default(false),

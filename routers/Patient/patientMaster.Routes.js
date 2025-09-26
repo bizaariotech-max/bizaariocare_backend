@@ -12,6 +12,7 @@ const {
   searchPatients,
   getPatientsByVerificationStatus,
   updateVerificationStatus,
+  getPatientByPhoneNumber,
 } = require("../../controllers/Patient/patientMaster.Controller");
 
 const {
@@ -53,5 +54,8 @@ router.get(
 
 // Update Patient Verification Status
 router.put("/updateVerificationStatus/:id", updateVerificationStatus);
+
+//getPatientByPhoneNumber
+router.get("/getPatientbyphonenumber/:PhoneNumber", getPatientByPhoneNumber);
 
 module.exports = router;

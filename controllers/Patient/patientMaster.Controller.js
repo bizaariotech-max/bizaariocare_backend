@@ -378,3 +378,22 @@ exports.updateVerificationStatus = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+
+// get patient by phone number
+exports.getPatientByPhoneNumber = async (req, res) => {
+  try {
+    const { PhoneNumber } = req.params;
+
+    const patient = await PatientMaster.findOne({ PhoneNumber: PhoneNumber });
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient));
+  } catch (error) {
+    console.error("Get Patient By PatientId Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};

@@ -77,7 +77,7 @@ app.use("/api/v1/admin", require("./routers/Patient/patientMaster.Routes"));
 // app.use("/api/v1/admin/patientprofiling", require("./routers/Patient/patientProfiling.Routes"));
 
 app.use(
-  "/api/v1/admin/patient-case-file",
+  "/api/v1/admin/patientCaseFile",
   require("./routers/Patient/patientCaseFile.Router")
 );
 

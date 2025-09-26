@@ -23,6 +23,10 @@ const PatientCaseFile = new Schema(
       ],
       // required: true,
     },
+    MedicalSpeciality: {
+      type: Schema.Types.ObjectId,
+      ref: "admin_lookups",
+    },
     DoctorId: { type: Schema.Types.ObjectId, ref: "asset_master" },
     DoctorName: { type: String, trim: true },
     HospitalId: { type: Schema.Types.ObjectId, ref: "asset_master" },
