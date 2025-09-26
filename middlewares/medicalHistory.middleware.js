@@ -40,7 +40,7 @@ const doctorHospitalInfoSchema = Joi.object({
   HospitalName: Joi.string().trim(),
   HospitalLocation: Joi.string().trim(),
   MedicalSpeciality: createObjectIdValidator("Medical Speciality"),
-});
+}).optional();
 
 // Schema for Chief Complaints
 const chiefComplaintSchema = Joi.object({
@@ -54,7 +54,7 @@ const chiefComplaintSchema = Joi.object({
   AggravatingFactors: Joi.array().items(
     createObjectIdValidator("Aggravating Factor")
   ),
-});
+}).optional();
 
 // Schema for Clinical Diagnosis
 const clinicalDiagnosisSchema = Joi.object({
@@ -69,7 +69,7 @@ const clinicalDiagnosisSchema = Joi.object({
   Abnormalities: Joi.array().items(createObjectIdValidator("Abnormality")),
   ReportUrl: Joi.string().trim(),
   InterpretationUrl: Joi.string().trim(),
-});
+}).optional();
 
 // Schema for Medicine
 const medicineSchema = Joi.object({
@@ -83,20 +83,20 @@ const medicinesPrescribedSchema = Joi.object({
   Medicines: Joi.array().items(medicineSchema).optional(),
   RecoveryCycle: durationSchema.optional(),
   PrescriptionUrls: Joi.array().items(Joi.string().trim()),
-});
+}).optional();
 
 // Schema for Therapy
 const therapySchema = Joi.object({
   TherapyName: createObjectIdValidator("Therapy Name"),
   // PatientResponse: createObjectIdValidator("Patient Response"),
   PatientResponse: Joi.string().trim(),
-});
+}).optional();
 
 // Schema for Recovery Cycle
 const recoveryCycleSchema = Joi.object({
   Value: Joi.number().min(0),
   Unit: createObjectIdValidator("Recovery Unit"),
-});
+}).optional();
 
 // Schema for Surgery/Procedure
 const surgeryProcedureSchema = Joi.object({
@@ -116,7 +116,7 @@ const surgeryProcedureSchema = Joi.object({
     createObjectIdValidator("Post Surgery Complication")
   ),
   DischargeSummaryUrlNote: Joi.string().trim().allow("", null),
-});
+}).optional();
 
 // Main Medical History Schema
 const medicalHistorySchema = Joi.object({
