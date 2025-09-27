@@ -354,6 +354,7 @@ const medicalHistorySchema = Joi.object({
   ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema).optional(),
   MedicinesPrescribed: medicinesPrescribedSchema.optional(),
   Therapies: Joi.array().items(therapySchema).optional(),
+  SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema).optional(),
   Status: Joi.string()
     .valid(
       "Active",
