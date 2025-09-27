@@ -73,19 +73,13 @@ const populateConfigs = {
     { path: "MedicinesPrescribed.Medicines.Dosage", select: "lookup_value" },
     { path: "MedicinesPrescribed.RecoveryCycle.Unit", select: "lookup_value" },
   ],
-  Therapies: [
-    { path: "Therapies.TherapyName", select: "lookup_value" },
-    { path: "Therapies.PatientResponse", select: "lookup_value" },
-  ],
+  Therapies: [{ path: "Therapies.TherapyName", select: "lookup_value" }],
   SurgeriesProcedures: [
-    { path: "SurgeriesProcedures.MedicalSpeciality", select: "lookup_value" },
+    { path: "SurgeryProcedure.MedicalSpeciality", select: "lookup_value" },
+    { path: "SurgeryProcedure.SurgeryProcedureName", select: "lookup_value" },
+    { path: "SurgeryProcedure.RecoveryCycle.Unit", select: "lookup_value" },
     {
-      path: "SurgeriesProcedures.SurgeryProcedureName",
-      select: "lookup_value",
-    },
-    { path: "SurgeriesProcedures.RecoveryCycle.Unit", select: "lookup_value" },
-    {
-      path: "SurgeriesProcedures.PostSurgeryComplications",
+      path: "SurgeryProcedure.PostSurgeryComplications",
       select: "lookup_value",
     },
   ],
@@ -473,8 +467,6 @@ exports.listChiefComplaints = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
-
-
 
 // ===================
 // CLINICAL DIAGNOSES
@@ -1328,6 +1320,284 @@ exports.deleteMedicine = async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ===================
+// SURGERIES/PROCEDURES
+// ===================
+
+// Add single surgery/procedure
+exports.addSurgeryProcedure = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, SurgeryProcedure, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.SurgeriesProcedures.push(SurgeryProcedure);
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_SURGERY_PROCEDURE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.SurgeriesProcedures)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Add multiple surgeries/procedures
+exports.addSurgeriesProcedures = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, SurgeriesProcedures, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    SurgeriesProcedures.forEach((surgeryProcedure) => {
+      medicalHistory.SurgeriesProcedures.push(surgeryProcedure);
+    });
+
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_SURGERIES_PROCEDURES",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.SurgeriesProcedures)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit single surgery/procedure
+exports.editSurgeryProcedure = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { _id, CaseFileId, SurgeryProcedure, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    const surgeryIndex = medicalHistory.SurgeriesProcedures.findIndex(
+      (surgery) => surgery._id.toString() === _id.toString()
+    );
+
+    if (surgeryIndex === -1) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Surgery/Procedure not found"));
+    }
+
+    medicalHistory.SurgeriesProcedures[surgeryIndex] = {
+      ...medicalHistory.SurgeriesProcedures[surgeryIndex].toObject(),
+      ...SurgeryProcedure,
+      _id: _id,
+    };
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_SURGERY_PROCEDURE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.SurgeriesProcedures)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit multiple surgeries/procedures (replace all)
+exports.editSurgeriesProcedures = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, SurgeriesProcedures, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.SurgeriesProcedures = SurgeriesProcedures;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_SURGERIES_PROCEDURES",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.SurgeriesProcedures)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listSurgeriesProcedures = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$SurgeriesProcedures",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $project: {
+          _id: "$SurgeriesProcedures._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: 1,
+          PatientId: 1,
+          SurgeryProcedure: "$SurgeriesProcedures",
+          createdAt: "$SurgeriesProcedures.createdAt",
+          updatedAt: "$SurgeriesProcedures.updatedAt",
+        },
+      },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateConfigs.SurgeriesProcedures
+    );
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$SurgeriesProcedures" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };

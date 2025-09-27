@@ -90,7 +90,36 @@ const medicinesPrescribedSchema = Joi.object({
 const therapySchema = Joi.object({
   _id: objectId("Therapy ID", false),
   TherapyName: objectId("Therapy Name", false),
-  PatientResponse: objectId("Patient Response", false),
+  // PatientResponse: objectId("Patient Response", false),
+  // PatientResponse: Joi.string()
+  //   .valid("Good", "Average", "Poor")
+  //   .optional()
+  //   .messages({
+  //     "string.base": "PatientResponse must be a string",
+  //     "any.only": "PatientResponse must be one of 'Good', 'Average', or 'Poor'",
+  //   }),
+  PatientResponse: Joi.string().allow(null, "").optional(),
+});
+
+// Surgery/Procedure Schema
+const surgeryProcedureSchema = Joi.object({
+  _id: objectId("Surgery Procedure ID", false),
+  Date: Joi.date().optional(),
+  HospitalClinicName: Joi.string().trim().allow("", null).optional(),
+  SurgeonName: Joi.string().trim().allow("", null).optional(),
+  SurgeonNumber: Joi.string().trim().allow("", null).optional(),
+  MedicalSpeciality: objectId("MedicalSpeciality", false),
+  SurgeryProcedureName: objectId("SurgeryProcedureName", false),
+  AnaesthesiaType: Joi.string().valid("General", "Local").optional(),
+  BloodTransfusionNeeded: Joi.boolean().optional(),
+  RecoveryCycle: Joi.object({
+    Value: Joi.number().min(0).optional(),
+    Unit: objectId("Recovery Unit", false),
+  }).optional(),
+  PostSurgeryComplications: Joi.array()
+    .items(objectId("Post Surgery Complication", false))
+    .optional(),
+  DischargeSummaryUrlNote: Joi.string().trim().allow("", null).optional(),
 });
 
 // Section-specific validation schemas
@@ -263,6 +292,55 @@ const sectionSchemas = {
       CaseFileId: objectId("CaseFileId"),
       Medicine: medicineSchema.required(),
       UpdatedBy: objectId("UpdatedBy"),
+    }),
+  },
+  // Add to sectionSchemas object
+  SurgeriesProcedures: {
+    // Single operations
+    add: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      SurgeryProcedure: surgeryProcedureSchema.required(),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    edit: Joi.object({
+      _id: objectId("Surgery Procedure ID"),
+      CaseFileId: objectId("CaseFileId"),
+      SurgeryProcedure: surgeryProcedureSchema.required(),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+
+    // Multiple operations
+    addMultiple: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      SurgeriesProcedures: Joi.array()
+        .items(surgeryProcedureSchema)
+        .min(1)
+        .required()
+        .messages({
+          "array.base": "SurgeriesProcedures must be an array",
+          "array.min": "At least one Surgery/Procedure is required",
+        }),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    editMultiple: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      SurgeriesProcedures: Joi.array()
+        .items(surgeryProcedureSchema)
+        .min(1)
+        .required()
+        .messages({
+          "array.base": "SurgeriesProcedures must be an array",
+          "array.min": "At least one Surgery/Procedure is required",
+        }),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
     }),
   },
 };
@@ -491,6 +569,28 @@ exports.validateAddMedicine = [
 ];
 exports.validateEditMedicine = [
   validateRequest(sectionSchemas.MedicinesPrescribed.editMedicine),
+  validateCaseFile,
+];
+
+// Export validators (Add to existing exports)
+exports.validateSurgeriesProceduresAdd = [
+  validateRequest(sectionSchemas.SurgeriesProcedures.add),
+  validateCaseFile,
+];
+exports.validateSurgeriesProceduresEdit = [
+  validateRequest(sectionSchemas.SurgeriesProcedures.edit),
+  validateCaseFile,
+];
+exports.validateSurgeriesProceduresAddMultiple = [
+  validateRequest(sectionSchemas.SurgeriesProcedures.addMultiple),
+  validateCaseFile,
+];
+exports.validateSurgeriesProceduresEditMultiple = [
+  validateRequest(sectionSchemas.SurgeriesProcedures.editMultiple),
+  validateCaseFile,
+];
+exports.validateSurgeriesProceduresList = [
+  validateRequest(sectionSchemas.SurgeriesProcedures.list),
   validateCaseFile,
 ];
 

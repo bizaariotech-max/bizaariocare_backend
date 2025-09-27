@@ -36,6 +36,13 @@ const {
   addMedicine,
   editMedicine,
   deleteMedicine,
+
+  // Surgeries/Procedures - ADD THESE
+  addSurgeryProcedure,
+  editSurgeryProcedure,
+  addSurgeriesProcedures,
+  editSurgeriesProcedures,
+  listSurgeriesProcedures,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
@@ -70,6 +77,13 @@ const {
   validateMedicinesPrescribedList,
   validateAddMedicine,
   validateEditMedicine,
+
+  // Surgeries/Procedures validators - ADD THESE
+  validateSurgeriesProceduresAdd,
+  validateSurgeriesProceduresEdit,
+  validateSurgeriesProceduresAddMultiple,
+  validateSurgeriesProceduresEditMultiple,
+  validateSurgeriesProceduresList,
 } = require("../../middlewares/medicalHistory2.middleware");
 
 // ===================
@@ -77,7 +91,7 @@ const {
 // ===================
 router.post("/save", validateMedicalHistory, saveMedicalHistory);
 router.get("/list", validateMedicalHistoryList, medicalHistoryList);
-router.get("/:id", getMedicalHistoryById);
+router.get("/medicalHistoryById/:id", getMedicalHistoryById);
 router.delete("/:id", deleteMedicalHistory);
 
 // ===================
@@ -204,6 +218,40 @@ router.put(
 router.delete(
   "/medicines-prescribed/:CaseFileId/medicine/:medicineId",
   deleteMedicine
+);
+
+// ===================
+// SURGERIES/PROCEDURES SECTION - ADD THIS SECTION
+// ===================
+// Single operations
+router.post(
+  "/surgeries-procedures/add",
+  validateSurgeriesProceduresAdd,
+  addSurgeryProcedure
+);
+router.put(
+  "/surgeries-procedures/edit",
+  validateSurgeriesProceduresEdit,
+  editSurgeryProcedure
+);
+
+// Multiple operations
+router.post(
+  "/surgeries-procedures/add-multiple",
+  validateSurgeriesProceduresAddMultiple,
+  addSurgeriesProcedures
+);
+router.put(
+  "/surgeries-procedures/edit-multiple",
+  validateSurgeriesProceduresEditMultiple,
+  editSurgeriesProcedures
+);
+
+// List
+router.get(
+  "/surgeries-procedures/list",
+  validateSurgeriesProceduresList,
+  listSurgeriesProcedures
 );
 
 // ===================

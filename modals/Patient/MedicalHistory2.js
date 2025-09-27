@@ -92,7 +92,12 @@ const MedicinesPrescribedSchema = new Schema(
 const TherapySchema = new Schema(
   {
     TherapyName: { type: Schema.Types.ObjectId, ref: "admin_lookups" },
-    PatientResponse: { type: Schema.Types.ObjectId, ref: "admin_lookups" },
+    PatientResponse: {
+      // type: Schema.Types.ObjectId,
+      // ref: "admin_lookups",
+      type: String,
+      // enum: ["Good", "Average", "Poor"],
+    },
   },
   {
     _id: true,
