@@ -3,12 +3,7 @@ const mongoose = require("mongoose");
 const { __requestResponse } = require("../utils/constant");
 const PatientCaseFile = require("../modals/Patient/PatientCaseFile");
 const Patient = require("../modals/Patient/PatientMaster");
-
-// 1. Add array validation helpers
-const validateArrayItems = (items, type) => {
-  if (!Array.isArray(items)) return false;
-  return items.every((item) => mongoose.Types.ObjectId.isValid(item));
-};
+const MedicalHistory = require("../modals/Patient/MedicalHistory2");
 
 // Helper for ObjectId validation
 const objectId = (field, required = true) =>
@@ -39,6 +34,7 @@ const durationSchema = Joi.object({
 
 // Chief Complaint Schema
 const chiefComplaintSchema = Joi.object({
+  _id: objectId("Chief Complaint ID", false),
   Symptoms: Joi.array().items(objectId("Symptom")).min(1).required().messages({
     "array.base": "Symptoms must be an array",
     "array.min": "At least one Symptom is required",
@@ -58,33 +54,34 @@ const chiefComplaintSchema = Joi.object({
     }),
 });
 
-// // Section schemas
-// const doctorHospitalInfoSchema = Joi.object({
-//   Date: Joi.date().optional(),
-//   DoctorName: Joi.string().trim().allow("", null).optional(),
-//   DoctorNumber: Joi.string().trim().allow("", null).optional(),
-//   HospitalName: Joi.string().trim().allow("", null).optional(),
-//   HospitalLocation: Joi.string().trim().allow("", null).optional(),
-//   MedicalSpeciality: objectId("MedicalSpeciality", false),
-// }).optional();
-
+// Clinical Diagnosis Schema
 const clinicalDiagnosisSchema = Joi.object({
+  _id: objectId("Clinical Diagnosis ID", false),
   Date: Joi.date().optional(),
   InvestigationCategory: objectId("Investigation Category", false),
   Investigation: objectId("Investigation", false),
   Abnormalities: Joi.array().items(objectId("Abnormality", false)).optional(),
   ReportUrl: Joi.string().trim().allow("", null).optional(),
   InterpretationUrl: Joi.string().trim().allow("", null).optional(),
-}).optional();
+});
 
+// Individual Medicine Schema (matches your MedicineSchema)
 const medicineSchema = Joi.object({
+  _id: objectId("Medicine ID", false), // For editing individual medicines
   MedicineName: objectId("Medicine Name", false),
   Dosage: objectId("Dosage", false),
-  DurationInDays: Joi.number().min(0).optional(),
-}).optional();
+  DurationInDays: Joi.number().min(0).optional().messages({
+    "number.base": "DurationInDays must be a number",
+    "number.min": "DurationInDays must be greater than or equal to 0",
+  }),
+});
 
+// Medicines Prescribed Schema (Single object with multiple medicines)
 const medicinesPrescribedSchema = Joi.object({
-  Medicines: Joi.array().items(medicineSchema).optional(),
+  Medicines: Joi.array().items(medicineSchema).min(1).required().messages({
+    "array.base": "Medicines must be an array",
+    "array.min": "At least one Medicine is required",
+  }),
   RecoveryCycle: Joi.object({
     Value: Joi.number().min(0).optional(),
     Unit: objectId("Recovery Unit", false),
@@ -92,43 +89,127 @@ const medicinesPrescribedSchema = Joi.object({
   PrescriptionUrls: Joi.array()
     .items(Joi.string().trim().allow("", null))
     .optional(),
-}).optional();
+});
 
+// Add Individual Medicine Schema (for adding single medicine to existing list)
+const addMedicineSchema = Joi.object({
+  CaseFileId: objectId("CaseFileId"),
+  Medicine: medicineSchema.required(),
+  CreatedBy: objectId("CreatedBy"),
+});
+
+// Edit Individual Medicine Schema
+const editMedicineSchema = Joi.object({
+  _id: objectId("Medicine ID"), // Medicine item ID within the Medicines array
+  CaseFileId: objectId("CaseFileId"),
+  Medicine: medicineSchema.required(),
+  UpdatedBy: objectId("UpdatedBy"),
+});
+
+// Therapy Schema
 const therapySchema = Joi.object({
+  _id: objectId("Therapy ID", false),
   TherapyName: objectId("Therapy Name", false),
   PatientResponse: objectId("Patient Response", false),
-}).optional();
+});
 
-const surgeryProcedureSchema = Joi.object({
-  Date: Joi.date().optional(),
-  HospitalClinicName: Joi.string().trim().allow("", null).optional(),
-  SurgeonName: Joi.string().trim().allow("", null).optional(),
-  SurgeonNumber: Joi.string().trim().allow("", null).optional(),
-  MedicalSpeciality: objectId("MedicalSpeciality", false),
-  SurgeryProcedureName: objectId("SurgeryProcedureName", false),
-  AnaesthesiaType: Joi.string().valid("General", "Local").optional(),
-  BloodTransfusionNeeded: Joi.boolean().optional(),
-  RecoveryCycle: Joi.object({
-    Value: Joi.number().min(0).optional(),
-    Unit: objectId("Recovery Unit", false),
-  }).optional(),
-  PostSurgeryComplications: Joi.array()
-    .items(objectId("Post Surgery Complication", false))
-    .optional(),
-  DischargeSummaryUrlNote: Joi.string().trim().allow("", null).optional(),
-}).optional();
+// Section-specific validation schemas
+const sectionSchemas = {
+  ChiefComplaints: {
+    add: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      ChiefComplaint: chiefComplaintSchema.required(),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    edit: Joi.object({
+      _id: objectId("Chief Complaint ID"),
+      CaseFileId: objectId("CaseFileId"),
+      ChiefComplaint: chiefComplaintSchema.required(),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
 
-// Main validation schema
+  ClinicalDiagnoses: {
+    add: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      ClinicalDiagnosis: clinicalDiagnosisSchema.required(),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    edit: Joi.object({
+      _id: objectId("Clinical Diagnosis ID"),
+      CaseFileId: objectId("CaseFileId"),
+      ClinicalDiagnosis: clinicalDiagnosisSchema.required(),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
+
+  MedicinesPrescribed: {
+    add: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      MedicinesPrescribed: medicinesPrescribedSchema.required(),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    edit: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      MedicinesPrescribed: medicinesPrescribedSchema.required(),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+    addMedicine: addMedicineSchema,
+    editMedicine: editMedicineSchema,
+  },
+
+  Therapies: {
+    add: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      Therapy: therapySchema.required(),
+      CreatedBy: objectId("CreatedBy"),
+    }),
+    edit: Joi.object({
+      _id: objectId("Therapy ID"),
+      CaseFileId: objectId("CaseFileId"),
+      Therapy: therapySchema.required(),
+      UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
+};
+
+// Main medical history validation
 const medicalHistorySchema = Joi.object({
   _id: objectId("_id", false),
   CaseFileId: objectId("CaseFileId"),
   PatientId: objectId("PatientId"),
-  // DoctorHospitalInfo: doctorHospitalInfoSchema,
   ChiefComplaints: Joi.array().items(chiefComplaintSchema).optional(),
   ClinicalDiagnoses: Joi.array().items(clinicalDiagnosisSchema).optional(),
-  MedicinesPrescribed: medicinesPrescribedSchema,
+  MedicinesPrescribed: medicinesPrescribedSchema.optional(),
   Therapies: Joi.array().items(therapySchema).optional(),
-  SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema).optional(),
   Status: Joi.string()
     .valid(
       "Active",
@@ -148,149 +229,63 @@ const medicalHistorySchema = Joi.object({
   UpdatedBy: objectId("UpdatedBy", false),
 });
 
-// Section-specific validation schemas with CaseFileId
-const sectionUpdateSchema = (sectionName, schema) =>
-  Joi.object({
-    CaseFileId: objectId("CaseFileId", true),
-    [sectionName]: schema,
-  });
+// Generic validation function
+const validateRequest = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(
+      req.method === "GET" ? req.query : req.body,
+      {
+        abortEarly: false,
+        allowUnknown: false,
+      }
+    );
 
-// // Validation middleware for each section
-// exports.validateDoctorHospitalInfo = (req, res, next) => {
-//   const { error } = sectionUpdateSchema(
-//     "DoctorHospitalInfo",
-//     doctorHospitalInfoSchema
-//   ).validate(req.body, {
-//     abortEarly: false,
-//     allowUnknown: false,
-//   });
-//   if (error) {
-//     return res.json(
-//       __requestResponse("400", {
-//         errorType: "Validation Error",
-//         error: error.details.map((d) => d.message).join(". "),
-//       })
-//     );
-//   }
-//   next();
-// };
+    if (error) {
+      return res.json(
+        __requestResponse("400", {
+          errorType: "Validation Error",
+          error: error.details
+            .map((d) => d.message)
+            .filter((value, index, self) => self.indexOf(value) === index)
+            .join(". "),
+        })
+      );
+    }
+    next();
+  };
+};
 
-// Validation middleware for chief complaints update
+// Case file validation
+const validateCaseFile = async (req, res, next) => {
+  try {
+    const { CaseFileId } = req.method === "GET" ? req.query : req.body;
 
-// Validation middleware for chief complaints
-exports.validateChiefComplaints = (req, res, next) => {
-  const schema = Joi.object({
-    CaseFileId: objectId("CaseFileId"),
-    _id: objectId("_id", false),
-    ChiefComplaints: Joi.array()
-      .items(chiefComplaintSchema)
-      .min(1)
-      .required()
-      .messages({
-        "array.base": "ChiefComplaints must be an array",
-        "array.min": "At least one Chief Complaint is required",
-      }),
-  });
-
-  const { error } = schema.validate(req.body, {
-    abortEarly: false,
-    allowUnknown: false,
-  });
-
-  if (error) {
+    if (CaseFileId) {
+      const caseFile = await PatientCaseFile.findById(CaseFileId);
+      if (!caseFile) {
+        return res.json(
+          __requestResponse("404", {
+            errorType: "Not Found",
+            error: "Case File does not exist",
+          })
+        );
+      }
+      req.caseFile = caseFile;
+    }
+    next();
+  } catch (err) {
     return res.json(
-      __requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details
-          .map((d) => d.message)
-          .filter((value, index, self) => self.indexOf(value) === index)
-          .join(". "),
+      __requestResponse("500", {
+        errorType: "Server Error",
+        error: "Error validating case file",
       })
     );
   }
-  next();
 };
 
-exports.validateClinicalDiagnoses = (req, res, next) => {
-  const { error } = sectionUpdateSchema(
-    "ClinicalDiagnoses",
-    Joi.array().items(clinicalDiagnosisSchema).required()
-  ).validate(req.body, {
-    abortEarly: false,
-    allowUnknown: false,
-  });
-  if (error) {
-    return res.json(
-      __requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". "),
-      })
-    );
-  }
-  next();
-};
-
-exports.validateMedicinesPrescribed = (req, res, next) => {
-  const { error } = sectionUpdateSchema(
-    "MedicinesPrescribed",
-    medicinesPrescribedSchema
-  ).validate(req.body, {
-    abortEarly: false,
-    allowUnknown: false,
-  });
-  if (error) {
-    return res.json(
-      __requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". "),
-      })
-    );
-  }
-  next();
-};
-
-exports.validateTherapies = (req, res, next) => {
-  const { error } = sectionUpdateSchema(
-    "Therapies",
-    Joi.array().items(therapySchema).required()
-  ).validate(req.body, {
-    abortEarly: false,
-    allowUnknown: false,
-  });
-  if (error) {
-    return res.json(
-      __requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". "),
-      })
-    );
-  }
-  next();
-};
-
-exports.validateSurgeriesProcedures = (req, res, next) => {
-  const { error } = sectionUpdateSchema(
-    "SurgeriesProcedures",
-    Joi.array().items(surgeryProcedureSchema).required()
-  ).validate(req.body, {
-    abortEarly: false,
-    allowUnknown: false,
-  });
-  if (error) {
-    return res.json(
-      __requestResponse("400", {
-        errorType: "Validation Error",
-        error: error.details.map((d) => d.message).join(". "),
-      })
-    );
-  }
-  next();
-};
-
-// Main medical history validation (existing)
+// Main medical history validation
 exports.validateMedicalHistory = async (req, res, next) => {
   try {
-    // First validate the schema
     const { error } = medicalHistorySchema.validate(req.body, {
       abortEarly: false,
       allowUnknown: false,
@@ -305,7 +300,7 @@ exports.validateMedicalHistory = async (req, res, next) => {
       );
     }
 
-    // Then check if CaseFileId exists
+    // Check if CaseFileId exists
     const caseFile = await PatientCaseFile.findById(req.body.CaseFileId);
     if (!caseFile) {
       return res.json(
@@ -348,108 +343,99 @@ exports.validateMedicalHistory = async (req, res, next) => {
   }
 };
 
-// Also update section update validations to check CaseFileId
-const validateSection = async (req, res, next, schema) => {
-  try {
-    const { error } = schema.validate(req.body, {
-      abortEarly: false,
-      allowUnknown: false,
-    });
+// Section-specific validators
+exports.validateChiefComplaintsAdd = [
+  validateRequest(sectionSchemas.ChiefComplaints.add),
+  validateCaseFile,
+];
 
-    if (error) {
-      return res.json(
-        __requestResponse("400", {
-          errorType: "Validation Error",
-          error: error.details.map((d) => d.message).join(". "),
-        })
-      );
-    }
+exports.validateChiefComplaintsEdit = [
+  validateRequest(sectionSchemas.ChiefComplaints.edit),
+  validateCaseFile,
+];
 
-    // Check if CaseFileId exists
-    const caseFile = await PatientCaseFile.findById(req.body.CaseFileId);
-    if (!caseFile) {
-      return res.json(
-        __requestResponse("404", {
-          errorType: "Not Found",
-          error: "Case File does not exist",
-        })
-      );
-    }
+exports.validateChiefComplaintsList = [
+  validateRequest(sectionSchemas.ChiefComplaints.list),
+  validateCaseFile,
+];
 
-    next();
-  } catch (err) {
-    return res.json(
-      __requestResponse("500", {
-        errorType: "Server Error",
-        error: "Error validating section",
-      })
-    );
-  }
-};
+exports.validateClinicalDiagnosesAdd = [
+  validateRequest(sectionSchemas.ClinicalDiagnoses.add),
+  validateCaseFile,
+];
 
-// Update section validators to use the new validateSection function
-exports.validateDoctorHospitalInfo = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema("DoctorHospitalInfo", doctorHospitalInfoSchema)
-  );
-};
+exports.validateClinicalDiagnosesEdit = [
+  validateRequest(sectionSchemas.ClinicalDiagnoses.edit),
+  validateCaseFile,
+];
 
-exports.validateChiefComplaints = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema(
-      "ChiefComplaints",
-      Joi.array().items(chiefComplaintSchema).required()
-    )
-  );
-};
+exports.validateClinicalDiagnosesList = [
+  validateRequest(sectionSchemas.ClinicalDiagnoses.list),
+  validateCaseFile,
+];
 
-exports.validateClinicalDiagnoses = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema(
-      "ClinicalDiagnoses",
-      Joi.array().items(clinicalDiagnosisSchema).required()
-    )
-  );
-};
+exports.validateMedicinesPrescribedAdd = [
+  validateRequest(sectionSchemas.MedicinesPrescribed.add),
+  validateCaseFile,
+];
 
-exports.validateMedicinesPrescribed = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema("MedicinesPrescribed", medicinesPrescribedSchema)
-  );
-};
+exports.validateMedicinesPrescribedEdit = [
+  validateRequest(sectionSchemas.MedicinesPrescribed.edit),
+  validateCaseFile,
+];
 
-exports.validateTherapies = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema(
-      "Therapies",
-      Joi.array().items(therapySchema).required()
-    )
-  );
-};
+exports.validateMedicinesPrescribedList = [
+  validateRequest(sectionSchemas.MedicinesPrescribed.list),
+  validateCaseFile,
+];
 
-exports.validateSurgeriesProcedures = (req, res, next) => {
-  validateSection(
-    req,
-    res,
-    next,
-    sectionUpdateSchema(
-      "SurgeriesProcedures",
-      Joi.array().items(surgeryProcedureSchema).required()
-    )
-  );
-};
+// New validators for individual medicine operations
+exports.validateAddMedicine = [
+  validateRequest(sectionSchemas.MedicinesPrescribed.addMedicine),
+  validateCaseFile,
+];
+
+exports.validateEditMedicine = [
+  validateRequest(sectionSchemas.MedicinesPrescribed.editMedicine),
+  validateCaseFile,
+];
+
+exports.validateTherapiesAdd = [
+  validateRequest(sectionSchemas.Therapies.add),
+  validateCaseFile,
+];
+
+exports.validateTherapiesEdit = [
+  validateRequest(sectionSchemas.Therapies.edit),
+  validateCaseFile,
+];
+
+exports.validateTherapiesList = [
+  validateRequest(sectionSchemas.Therapies.list),
+  validateCaseFile,
+];
+
+// Medical history list validation
+exports.validateMedicalHistoryList = validateRequest(
+  Joi.object({
+    CaseFileId: objectId("CaseFileId", false),
+    PatientId: objectId("PatientId", false),
+    Status: Joi.string()
+      .valid(
+        "Active",
+        "Ongoing",
+        "In-Treatment",
+        "Monitoring",
+        "Chronic",
+        "Resolved",
+        "Cured",
+        "Past"
+      )
+      .optional(),
+    FromDate: Joi.date().optional(),
+    ToDate: Joi.date().optional(),
+    page: Joi.number().min(1).optional(),
+    limit: Joi.number().min(1).max(100).optional(),
+    search: Joi.string().trim().allow("").optional(),
+  })
+);

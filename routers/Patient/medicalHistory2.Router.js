@@ -1,72 +1,157 @@
 const express = require("express");
 const router = express.Router();
 const {
+  // Main medical history
   saveMedicalHistory,
   medicalHistoryList,
   getMedicalHistoryById,
   deleteMedicalHistory,
-  // updateDoctorHospitalInfo,
-  updateChiefComplaints,
-  updateClinicalDiagnoses,
-  updateMedicinesPrescribed,
-  updateTherapies,
-  updateSurgeriesProcedures,
-  deleteChiefComplaint,
+  deleteSectionItem,
+
+  // Chief Complaints
+  addChiefComplaint,
+  editChiefComplaint,
+  listChiefComplaints,
+
+  // Clinical Diagnoses
+  addClinicalDiagnosis,
+  editClinicalDiagnosis,
+  listClinicalDiagnoses,
+
+  // Medicines Prescribed
+  addMedicinesPrescribed,
+  editMedicinesPrescribed,
+  listMedicinesPrescribed,
+  addMedicine,
+  editMedicine,
+  deleteMedicine,
+
+  // Therapies
+  addTherapy,
+  editTherapy,
+  listTherapies,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
+  // Main medical history validators
   validateMedicalHistory,
-  validateDoctorHospitalInfo,
-  validateChiefComplaints,
-  validateClinicalDiagnoses,
-  validateMedicinesPrescribed,
-  validateTherapies,
-  validateSurgeriesProcedures,
+  validateMedicalHistoryList,
+
+  // Chief Complaints validators
+  validateChiefComplaintsAdd,
+  validateChiefComplaintsEdit,
+  validateChiefComplaintsList,
+
+  // Clinical Diagnoses validators
+  validateClinicalDiagnosesAdd,
+  validateClinicalDiagnosesEdit,
+  validateClinicalDiagnosesList,
+
+  // Medicines Prescribed validators
+  validateMedicinesPrescribedAdd,
+  validateMedicinesPrescribedEdit,
+  validateMedicinesPrescribedList,
+  validateAddMedicine,
+  validateEditMedicine,
+
+  // Therapies validators
+  validateTherapiesAdd,
+  validateTherapiesEdit,
+  validateTherapiesList,
 } = require("../../middlewares/medicalHistory2.middleware");
 
-// Base CRUD routes
+// ===================
+// MAIN MEDICAL HISTORY ROUTES
+// ===================
 router.post("/save", validateMedicalHistory, saveMedicalHistory);
-router.get("/list", medicalHistoryList);
+router.get("/list", validateMedicalHistoryList, medicalHistoryList);
 router.get("/:id", getMedicalHistoryById);
 router.delete("/:id", deleteMedicalHistory);
 
-// // Section update routes
-// router.put(
-//   "/doctor-hospital-info",
-//   validateDoctorHospitalInfo,
-//   updateDoctorHospitalInfo
-// );
-
+// ===================
+// CHIEF COMPLAINTS SECTION
+// ===================
+router.post(
+  "/chief-complaints/add",
+  validateChiefComplaintsAdd,
+  addChiefComplaint
+);
 router.put(
-  "/chief-complaints",
-  validateChiefComplaints,
-  updateChiefComplaints
+  "/chief-complaints/edit",
+  validateChiefComplaintsEdit,
+  editChiefComplaint
+);
+router.get(
+  "/chief-complaints/list",
+  validateChiefComplaintsList,
+  listChiefComplaints
 );
 
+// ===================
+// CLINICAL DIAGNOSES SECTION
+// ===================
+router.post(
+  "/clinical-diagnoses/add",
+  validateClinicalDiagnosesAdd,
+  addClinicalDiagnosis
+);
 router.put(
-  "/clinical-diagnoses",
-  validateClinicalDiagnoses,
-  updateClinicalDiagnoses
+  "/clinical-diagnoses/edit",
+  validateClinicalDiagnosesEdit,
+  editClinicalDiagnosis
+);
+router.get(
+  "/clinical-diagnoses/list",
+  validateClinicalDiagnosesList,
+  listClinicalDiagnoses
 );
 
+// ===================
+// MEDICINES PRESCRIBED SECTION
+// ===================
+// Complete medicines prescribed operations
+router.post(
+  "/medicines-prescribed/add",
+  validateMedicinesPrescribedAdd,
+  addMedicinesPrescribed
+);
 router.put(
-  "/medicines-prescribed",
-  validateMedicinesPrescribed,
-  updateMedicinesPrescribed
+  "/medicines-prescribed/edit",
+  validateMedicinesPrescribedEdit,
+  editMedicinesPrescribed
+);
+router.get(
+  "/medicines-prescribed/list",
+  validateMedicinesPrescribedList,
+  listMedicinesPrescribed
 );
 
-router.put("/therapies", validateTherapies, updateTherapies);
-
-router.put(
-  "/surgeries-procedures",
-  validateSurgeriesProcedures,
-  updateSurgeriesProcedures
+// Individual medicine operations
+router.post(
+  "/medicines-prescribed/add-medicine",
+  validateAddMedicine,
+  addMedicine
 );
-
-// Delete section items
+router.put(
+  "/medicines-prescribed/edit-medicine",
+  validateEditMedicine,
+  editMedicine
+);
 router.delete(
-  "/chief-complaints/:CaseFileId/:complaintId",
-  deleteChiefComplaint
+  "/medicines-prescribed/:CaseFileId/medicine/:medicineId",
+  deleteMedicine
 );
+
+// ===================
+// THERAPIES SECTION
+// ===================
+router.post("/therapies/add", validateTherapiesAdd, addTherapy);
+router.put("/therapies/edit", validateTherapiesEdit, editTherapy);
+router.get("/therapies/list", validateTherapiesList, listTherapies);
+
+// ===================
+// DELETE SECTION ITEMS
+// ===================
+router.delete("/section/:CaseFileId/:sectionName/:itemId", deleteSectionItem);
 
 module.exports = router;

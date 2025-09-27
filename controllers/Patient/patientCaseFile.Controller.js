@@ -1,6 +1,6 @@
 const PatientCaseFile = require("../../modals/Patient/PatientCaseFile");
 const MedicalHistory = require("../../modals/Patient/MedicalHistory2");
-const { __requestResponse } = require("../../utils/constant");
+const { __requestResponse, __deepClone } = require("../../utils/constant");
 const { __SUCCESS, __SOME_ERROR } = require("../../utils/variable");
 const { __CreateAuditLog } = require("../../utils/auditlog");
 const mongoose = require("mongoose");
