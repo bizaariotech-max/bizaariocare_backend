@@ -573,7 +573,7 @@ exports.validateEditMedicine = [
   validateCaseFile,
 ];
 
-// Export validators (Add to existing exports)
+// SurgeriesProcedures validators
 exports.validateSurgeriesProceduresAdd = [
   validateRequest(sectionSchemas.SurgeriesProcedures.add),
   validateCaseFile,

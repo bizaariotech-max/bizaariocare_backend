@@ -673,7 +673,7 @@ exports.editClinicalDiagnoses = async (req, res) => {
   }
 };
 
-exports.listClinicalDiagnoses = async (req, res) => {
+exports.listClinicalDiagnosesxxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -714,6 +714,85 @@ exports.listClinicalDiagnoses = async (req, res) => {
       results,
       populateConfigs.ClinicalDiagnoses
     );
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$ClinicalDiagnoses" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listClinicalDiagnoses = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$ClinicalDiagnoses",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $project: {
+          _id: "$ClinicalDiagnoses._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: 1,
+          PatientId: 1,
+          ClinicalDiagnosis: "$ClinicalDiagnoses", // Single clinical diagnosis object
+          createdAt: "$ClinicalDiagnoses.createdAt",
+          updatedAt: "$ClinicalDiagnoses.updatedAt",
+        },
+      },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    // Populate clinical diagnosis-specific fields
+    const populatedResults = await MedicalHistory.populate(results, [
+      {
+        path: "ClinicalDiagnosis.InvestigationCategory",
+        select: "lookup_value",
+      },
+      { path: "ClinicalDiagnosis.Investigation", select: "lookup_value" },
+      { path: "ClinicalDiagnosis.Abnormalities", select: "lookup_value" },
+    ]);
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -940,7 +1019,7 @@ exports.editTherapies = async (req, res) => {
   }
 };
 
-exports.listTherapies = async (req, res) => {
+exports.listTherapiesxxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -976,6 +1055,76 @@ exports.listTherapies = async (req, res) => {
       results,
       populateConfigs.Therapies
     );
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$Therapies" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listTherapies = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $unwind: { path: "$Therapies", preserveNullAndEmptyArrays: false } },
+      {
+        $project: {
+          _id: "$Therapies._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: 1,
+          PatientId: 1,
+          Therapy: "$Therapies", // Single therapy object
+          createdAt: "$Therapies.createdAt",
+          updatedAt: "$Therapies.updatedAt",
+        },
+      },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    // Populate therapy-specific fields
+    const populatedResults = await MedicalHistory.populate(results, [
+      { path: "Therapy.TherapyName", select: "lookup_value" },
+      { path: "Therapy.PatientResponse", select: "lookup_value" },
+    ]);
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -1210,7 +1359,7 @@ exports.editMedicine = async (req, res) => {
   }
 };
 
-exports.listMedicinesPrescribed = async (req, res) => {
+exports.listMedicinesPrescribedxxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -1277,6 +1426,151 @@ exports.listMedicinesPrescribed = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+exports.listMedicinesPrescribed = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
+    ];
+
+    if (req.query.expandMedicines === "true") {
+      // When expanding medicines, unwind individual medicines
+      pipeline.push(
+        {
+          $unwind: {
+            path: "$MedicinesPrescribed.Medicines",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: "$MedicinesPrescribed.Medicines._id",
+            medicalHistoryId: "$_id",
+            CaseFileId: 1,
+            PatientId: 1,
+            Medicine: "$MedicinesPrescribed.Medicines", // Individual medicine
+            MedicinesPrescribed: {
+              RecoveryCycle: "$MedicinesPrescribed.RecoveryCycle",
+              PrescriptionUrls: "$MedicinesPrescribed.PrescriptionUrls",
+              _id: "$MedicinesPrescribed._id",
+            },
+            createdAt: "$MedicinesPrescribed.Medicines.createdAt",
+            updatedAt: "$MedicinesPrescribed.Medicines.updatedAt",
+          },
+        }
+      );
+    } else {
+      // When not expanding, show complete MedicinesPrescribed objects
+      pipeline.push({
+        $project: {
+          _id: "$MedicinesPrescribed._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: 1,
+          PatientId: 1,
+          MedicinesPrescribed: "$MedicinesPrescribed",
+          createdAt: "$MedicinesPrescribed.createdAt",
+          updatedAt: "$MedicinesPrescribed.updatedAt",
+        },
+      });
+    }
+
+    pipeline.push(
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      }
+    );
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    // Different population based on expand mode
+    let populateFields;
+    if (req.query.expandMedicines === "true") {
+      populateFields = [
+        { path: "Medicine.MedicineName", select: "lookup_value" },
+        { path: "Medicine.Dosage", select: "lookup_value" },
+        {
+          path: "MedicinesPrescribed.RecoveryCycle.Unit",
+          select: "lookup_value",
+        },
+      ];
+    } else {
+      populateFields = [
+        {
+          path: "MedicinesPrescribed.Medicines.MedicineName",
+          select: "lookup_value",
+        },
+        {
+          path: "MedicinesPrescribed.Medicines.Dosage",
+          select: "lookup_value",
+        },
+        {
+          path: "MedicinesPrescribed.RecoveryCycle.Unit",
+          select: "lookup_value",
+        },
+      ];
+    }
+
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateFields
+    );
+
+    // Count total based on expand mode
+    let total;
+    if (req.query.expandMedicines === "true") {
+      // Count individual medicines
+      const countPipeline = await MedicalHistory.aggregate([
+        { $match: query },
+        { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
+        { $unwind: "$MedicinesPrescribed.Medicines" },
+        { $count: "total" },
+      ]);
+      total = countPipeline[0]?.total || 0;
+    } else {
+      // Count MedicinesPrescribed objects
+      total = await MedicalHistory.countDocuments({
+        ...query,
+        MedicinesPrescribed: { $exists: true, $ne: null },
+      });
+    }
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+        expandMedicines: req.query.expandMedicines === "true",
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 
 exports.deleteMedicine = async (req, res) => {
   const session = await mongoose.startSession();
