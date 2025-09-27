@@ -296,7 +296,7 @@ exports.editChiefComplaints = async (req, res) => {
   }
 };
 
-exports.listChiefComplaints = async (req, res) => {
+exports.listChiefComplaintsxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -376,6 +376,105 @@ exports.listChiefComplaints = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+exports.listChiefComplaints = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$ChiefComplaints",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+    ];
+
+    if (search) {
+      pipeline.push({
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptomDetails",
+        },
+      });
+      pipeline.push({
+        $match: {
+          "symptomDetails.lookup_value": { $regex: search, $options: "i" },
+        },
+      });
+    }
+
+    // Fix: Use only inclusion projection
+    pipeline.push({
+      $project: {
+        _id: "$ChiefComplaints._id",
+        medicalHistoryId: "$_id",
+        CaseFileId: 1,
+        PatientId: 1,
+        ChiefComplaint: "$ChiefComplaints",
+        createdAt: "$ChiefComplaints.createdAt",
+        updatedAt: "$ChiefComplaints.updatedAt",
+        // Remove exclusion fields - just don't include them
+      },
+    });
+
+    pipeline.push(
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      }
+    );
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    // Populate only chief complaint related fields
+    const populatedResults = await MedicalHistory.populate(results, [
+      { path: "ChiefComplaint.Symptoms", select: "lookup_value" },
+      { path: "ChiefComplaint.Duration.Unit", select: "lookup_value" },
+      { path: "ChiefComplaint.AggravatingFactors", select: "lookup_value" },
+    ]);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$ChiefComplaints" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+
 
 // ===================
 // CLINICAL DIAGNOSES
