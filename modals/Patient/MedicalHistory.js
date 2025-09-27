@@ -237,6 +237,12 @@ const SurgeryProcedureSchema = new Schema({
 // Main Medical History Schema
 const MedicalHistorySchema = new Schema(
   {
+    CaseFileId: {
+      type: Schema.Types.ObjectId,
+      ref: "patient_case_file",
+      required: true,
+      index: true,
+    },
     PatientId: {
       // Patient ID
       type: Schema.Types.ObjectId,
@@ -410,137 +416,153 @@ MedicalHistorySchema.statics.findByPatient = function (
 };
 
 // Method to update status
-MedicalHistorySchema.methods.updateStatus = function(newStatus) {
+MedicalHistorySchema.methods.updateStatus = function (newStatus) {
   this.Status = newStatus;
   return this.save();
 };
 
 // Static method to find past illnesses (resolved/cured)
-MedicalHistorySchema.statics.findPastIllnesses = function(patientId) {
+MedicalHistorySchema.statics.findPastIllnesses = function (patientId) {
   return this.find({
     PatientId: patientId,
-    Status: { $in: ['Resolved', 'Cured'] },
-    IsDeleted: false
+    Status: { $in: ["Resolved", "Cured"] },
+    IsDeleted: false,
   })
-    .populate('DoctorHospitalInfo.MedicalSpeciality', 'lookup_value')
-    .populate('ChiefComplaints.Symptoms', 'lookup_value')
-    .populate('ChiefComplaints.SeverityGrade', 'lookup_value')
-    .populate('ClinicalDiagnoses.InvestigationCategory', 'lookup_value')
-    .populate('ClinicalDiagnoses.Investigation', 'lookup_value')
-    .populate('MedicinesPrescribed.Medicines.MedicineName', 'lookup_value')
-    .populate('Therapies.TherapyName', 'lookup_value')
-    .populate('SurgeriesProcedures.SurgeryProcedureName', 'lookup_value')
-    .sort({ 'DoctorHospitalInfo.Date': -1 });
+    .populate("DoctorHospitalInfo.MedicalSpeciality", "lookup_value")
+    .populate("ChiefComplaints.Symptoms", "lookup_value")
+    .populate("ChiefComplaints.SeverityGrade", "lookup_value")
+    .populate("ClinicalDiagnoses.InvestigationCategory", "lookup_value")
+    .populate("ClinicalDiagnoses.Investigation", "lookup_value")
+    .populate("MedicinesPrescribed.Medicines.MedicineName", "lookup_value")
+    .populate("Therapies.TherapyName", "lookup_value")
+    .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value")
+    .sort({ "DoctorHospitalInfo.Date": -1 });
 };
 
 // Static method to find present/active illnesses
-MedicalHistorySchema.statics.findPresentIllnesses = function(patientId) {
+MedicalHistorySchema.statics.findPresentIllnesses = function (patientId) {
   return this.find({
     PatientId: patientId,
-    Status: { $in: ['Active', 'Ongoing', 'In-Treatment', 'Monitoring', 'Chronic'] },
-    IsDeleted: false
+    Status: {
+      $in: ["Active", "Ongoing", "In-Treatment", "Monitoring", "Chronic"],
+    },
+    IsDeleted: false,
   })
-    .populate('DoctorHospitalInfo.MedicalSpeciality', 'lookup_value')
-    .populate('ChiefComplaints.Symptoms', 'lookup_value')
-    .populate('ChiefComplaints.SeverityGrade', 'lookup_value')
-    .populate('ClinicalDiagnoses.InvestigationCategory', 'lookup_value')
-    .populate('ClinicalDiagnoses.Investigation', 'lookup_value')
-    .populate('MedicinesPrescribed.Medicines.MedicineName', 'lookup_value')
-    .populate('Therapies.TherapyName', 'lookup_value')
-    .populate('SurgeriesProcedures.SurgeryProcedureName', 'lookup_value')
-    .sort({ 'DoctorHospitalInfo.Date': -1 });
+    .populate("DoctorHospitalInfo.MedicalSpeciality", "lookup_value")
+    .populate("ChiefComplaints.Symptoms", "lookup_value")
+    .populate("ChiefComplaints.SeverityGrade", "lookup_value")
+    .populate("ClinicalDiagnoses.InvestigationCategory", "lookup_value")
+    .populate("ClinicalDiagnoses.Investigation", "lookup_value")
+    .populate("MedicinesPrescribed.Medicines.MedicineName", "lookup_value")
+    .populate("Therapies.TherapyName", "lookup_value")
+    .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value")
+    .sort({ "DoctorHospitalInfo.Date": -1 });
 };
 
 // Static method to find chronic conditions
-MedicalHistorySchema.statics.findChronicConditions = function(patientId) {
+MedicalHistorySchema.statics.findChronicConditions = function (patientId) {
   return this.find({
     PatientId: patientId,
-    Status: 'Chronic',
-    IsDeleted: false
+    Status: "Chronic",
+    IsDeleted: false,
   })
-    .populate('ChiefComplaints.Symptoms', 'lookup_value')
-    .populate('MedicinesPrescribed.Medicines.MedicineName', 'lookup_value')
+    .populate("ChiefComplaints.Symptoms", "lookup_value")
+    .populate("MedicinesPrescribed.Medicines.MedicineName", "lookup_value")
     .sort({ createdAt: -1 });
 };
 
 // Helper static method to get lookup data by type
-MedicalHistorySchema.statics.getLookupsByType = function(lookupType) {
+MedicalHistorySchema.statics.getLookupsByType = function (lookupType) {
   const AdminLookups = mongoose.model("admin_lookups");
   return AdminLookups.find({
     lookup_type: lookupType,
-    is_active: true
+    is_active: true,
   }).sort({ sort_order: 1, lookup_value: 1 });
 };
 
 // Static method to find by symptom
-MedicalHistorySchema.statics.findBySymptom = function(symptomId) {
+MedicalHistorySchema.statics.findBySymptom = function (symptomId) {
   return this.find({
-    'ChiefComplaints.Symptoms': symptomId,
-    IsDeleted: false
+    "ChiefComplaints.Symptoms": symptomId,
+    IsDeleted: false,
   })
-    .populate('PatientId', 'Name PatientId')
-    .populate('ChiefComplaints.Symptoms', 'lookup_value');
+    .populate("PatientId", "Name PatientId")
+    .populate("ChiefComplaints.Symptoms", "lookup_value");
 };
 
 // Static method to find by medication
-MedicalHistorySchema.statics.findByMedication = function(medicationId) {
+MedicalHistorySchema.statics.findByMedication = function (medicationId) {
   return this.find({
-    'MedicinesPrescribed.Medicines.MedicineName': medicationId,
-    IsDeleted: false
+    "MedicinesPrescribed.Medicines.MedicineName": medicationId,
+    IsDeleted: false,
   })
-    .populate('PatientId', 'Name PatientId')
-    .populate('MedicinesPrescribed.Medicines.MedicineName', 'lookup_value');
+    .populate("PatientId", "Name PatientId")
+    .populate("MedicinesPrescribed.Medicines.MedicineName", "lookup_value");
 };
 
 // Static method to find by surgery/procedure
-MedicalHistorySchema.statics.findBySurgery = function(procedureId) {
+MedicalHistorySchema.statics.findBySurgery = function (procedureId) {
   return this.find({
-    'SurgeriesProcedures.SurgeryProcedureName': procedureId,
-    IsDeleted: false
+    "SurgeriesProcedures.SurgeryProcedureName": procedureId,
+    IsDeleted: false,
   })
-    .populate('PatientId', 'Name PatientId')
-    .populate('SurgeriesProcedures.SurgeryProcedureName', 'lookup_value');
+    .populate("PatientId", "Name PatientId")
+    .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value");
 };
 
 // Static method to get all medical history summary for a patient
-MedicalHistorySchema.statics.getPatientMedicalSummary = function(patientId) {
+MedicalHistorySchema.statics.getPatientMedicalSummary = function (patientId) {
   return this.aggregate([
-    { $match: { PatientId: mongoose.Types.ObjectId(patientId), IsDeleted: false } },
+    {
+      $match: {
+        PatientId: mongoose.Types.ObjectId(patientId),
+        IsDeleted: false,
+      },
+    },
     {
       $group: {
         _id: "$PatientId",
         totalRecords: { $sum: 1 },
         activeIllnesses: {
           $sum: {
-            $cond: [{ $in: ["$Status", ["Active", "Ongoing", "In-Treatment", "Monitoring"]] }, 1, 0]
-          }
+            $cond: [
+              {
+                $in: [
+                  "$Status",
+                  ["Active", "Ongoing", "In-Treatment", "Monitoring"],
+                ],
+              },
+              1,
+              0,
+            ],
+          },
         },
         chronicConditions: {
           $sum: {
-            $cond: [{ $eq: ["$Status", "Chronic"] }, 1, 0]
-          }
+            $cond: [{ $eq: ["$Status", "Chronic"] }, 1, 0],
+          },
         },
         resolvedIllnesses: {
           $sum: {
-            $cond: [{ $in: ["$Status", ["Resolved", "Cured"]] }, 1, 0]
-          }
+            $cond: [{ $in: ["$Status", ["Resolved", "Cured"]] }, 1, 0],
+          },
         },
         totalSurgeries: {
-          $sum: { $size: { $ifNull: ["$SurgeriesProcedures", []] } }
+          $sum: { $size: { $ifNull: ["$SurgeriesProcedures", []] } },
         },
-        latestVisit: { $max: "$DoctorHospitalInfo.Date" }
-      }
-    }
+        latestVisit: { $max: "$DoctorHospitalInfo.Date" },
+      },
+    },
   ]);
 };
 
 // Ensure virtuals are included in JSON
-MedicalHistorySchema.set('toJSON', {
+MedicalHistorySchema.set("toJSON", {
   virtuals: true,
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     delete ret.id;
     return ret;
-  }
+  },
 });
 
-module.exports = mongoose.model("MedicalHistory", MedicalHistorySchema);
+module.exports = mongoose.model("medical_history", MedicalHistorySchema);

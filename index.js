@@ -82,7 +82,10 @@ app.use(
 );
 
 app.use("/api/v1/admin/medicalHistory", require("./routers/Patient/medicalHistory.Router"));
-
+app.use(
+  "/api/v1/admin/medical-history",
+  require("./routers/Patient/medicalHistory2.Router")
+);
 // patient Referral
 app.use("/api/v1/admin/patientreferral", require("./routers/Patient/patientReferral.Routes"));
 

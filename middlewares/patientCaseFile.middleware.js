@@ -80,6 +80,7 @@ const patientCaseFileSchema = Joi.object({
     "date.base": "Invalid date format",
   }),
   Notes: Joi.string().trim().allow("", null).optional(),
+  Status: Joi.string().valid("Ongoing", "Past", "Resolved").optional(),
   IsActive: Joi.boolean().default(true),
   IsDeleted: Joi.boolean().default(false),
 });
