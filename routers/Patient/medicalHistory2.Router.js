@@ -11,12 +11,23 @@ const {
   // Chief Complaints
   addChiefComplaint,
   editChiefComplaint,
+  addChiefComplaints,
+  editChiefComplaints,
   listChiefComplaints,
 
   // Clinical Diagnoses
   addClinicalDiagnosis,
   editClinicalDiagnosis,
+  addClinicalDiagnoses,
+  editClinicalDiagnoses,
   listClinicalDiagnoses,
+
+  // Therapies
+  addTherapy,
+  editTherapy,
+  addTherapies,
+  editTherapies,
+  listTherapies,
 
   // Medicines Prescribed
   addMedicinesPrescribed,
@@ -25,11 +36,6 @@ const {
   addMedicine,
   editMedicine,
   deleteMedicine,
-
-  // Therapies
-  addTherapy,
-  editTherapy,
-  listTherapies,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
@@ -40,12 +46,23 @@ const {
   // Chief Complaints validators
   validateChiefComplaintsAdd,
   validateChiefComplaintsEdit,
+  validateChiefComplaintsAddMultiple,
+  validateChiefComplaintsEditMultiple,
   validateChiefComplaintsList,
 
   // Clinical Diagnoses validators
   validateClinicalDiagnosesAdd,
   validateClinicalDiagnosesEdit,
+  validateClinicalDiagnosesAddMultiple,
+  validateClinicalDiagnosesEditMultiple,
   validateClinicalDiagnosesList,
+
+  // Therapies validators
+  validateTherapiesAdd,
+  validateTherapiesEdit,
+  validateTherapiesAddMultiple,
+  validateTherapiesEditMultiple,
+  validateTherapiesList,
 
   // Medicines Prescribed validators
   validateMedicinesPrescribedAdd,
@@ -53,11 +70,6 @@ const {
   validateMedicinesPrescribedList,
   validateAddMedicine,
   validateEditMedicine,
-
-  // Therapies validators
-  validateTherapiesAdd,
-  validateTherapiesEdit,
-  validateTherapiesList,
 } = require("../../middlewares/medicalHistory2.middleware");
 
 // ===================
@@ -71,6 +83,7 @@ router.delete("/:id", deleteMedicalHistory);
 // ===================
 // CHIEF COMPLAINTS SECTION
 // ===================
+// Single operations
 router.post(
   "/chief-complaints/add",
   validateChiefComplaintsAdd,
@@ -81,6 +94,20 @@ router.put(
   validateChiefComplaintsEdit,
   editChiefComplaint
 );
+
+// Multiple operations
+router.post(
+  "/chief-complaints/add-multiple",
+  validateChiefComplaintsAddMultiple,
+  addChiefComplaints
+);
+router.put(
+  "/chief-complaints/edit-multiple",
+  validateChiefComplaintsEditMultiple,
+  editChiefComplaints
+);
+
+// List
 router.get(
   "/chief-complaints/list",
   validateChiefComplaintsList,
@@ -90,6 +117,7 @@ router.get(
 // ===================
 // CLINICAL DIAGNOSES SECTION
 // ===================
+// Single operations
 router.post(
   "/clinical-diagnoses/add",
   validateClinicalDiagnosesAdd,
@@ -100,11 +128,47 @@ router.put(
   validateClinicalDiagnosesEdit,
   editClinicalDiagnosis
 );
+
+// Multiple operations
+router.post(
+  "/clinical-diagnoses/add-multiple",
+  validateClinicalDiagnosesAddMultiple,
+  addClinicalDiagnoses
+);
+router.put(
+  "/clinical-diagnoses/edit-multiple",
+  validateClinicalDiagnosesEditMultiple,
+  editClinicalDiagnoses
+);
+
+// List
 router.get(
   "/clinical-diagnoses/list",
   validateClinicalDiagnosesList,
   listClinicalDiagnoses
 );
+
+// ===================
+// THERAPIES SECTION
+// ===================
+// Single operations
+router.post("/therapies/add", validateTherapiesAdd, addTherapy);
+router.put("/therapies/edit", validateTherapiesEdit, editTherapy);
+
+// Multiple operations
+router.post(
+  "/therapies/add-multiple",
+  validateTherapiesAddMultiple,
+  addTherapies
+);
+router.put(
+  "/therapies/edit-multiple",
+  validateTherapiesEditMultiple,
+  editTherapies
+);
+
+// List
+router.get("/therapies/list", validateTherapiesList, listTherapies);
 
 // ===================
 // MEDICINES PRESCRIBED SECTION
@@ -141,13 +205,6 @@ router.delete(
   "/medicines-prescribed/:CaseFileId/medicine/:medicineId",
   deleteMedicine
 );
-
-// ===================
-// THERAPIES SECTION
-// ===================
-router.post("/therapies/add", validateTherapiesAdd, addTherapy);
-router.put("/therapies/edit", validateTherapiesEdit, editTherapy);
-router.get("/therapies/list", validateTherapiesList, listTherapies);
 
 // ===================
 // DELETE SECTION ITEMS

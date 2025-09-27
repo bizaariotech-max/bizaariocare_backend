@@ -28,13 +28,9 @@ const getOrCreateMedicalHistory = async (
           CreatedBy,
           ChiefComplaints: [],
           ClinicalDiagnoses: [],
-          //  MedicinesPrescribed is a single object, not an array
           MedicinesPrescribed: {
             Medicines: [],
-            RecoveryCycle: {
-              Value: 0,
-              Unit: null,
-            },
+            RecoveryCycle: { Value: 0, Unit: null },
             PrescriptionUrls: [],
           },
           Therapies: [],
@@ -54,7 +50,6 @@ const getOrCreateMedicalHistory = async (
       medicalHistory._id
     );
   }
-
   return medicalHistory;
 };
 
@@ -82,12 +77,25 @@ const populateConfigs = {
     { path: "Therapies.TherapyName", select: "lookup_value" },
     { path: "Therapies.PatientResponse", select: "lookup_value" },
   ],
+  SurgeriesProcedures: [
+    { path: "SurgeriesProcedures.MedicalSpeciality", select: "lookup_value" },
+    {
+      path: "SurgeriesProcedures.SurgeryProcedureName",
+      select: "lookup_value",
+    },
+    { path: "SurgeriesProcedures.RecoveryCycle.Unit", select: "lookup_value" },
+    {
+      path: "SurgeriesProcedures.PostSurgeryComplications",
+      select: "lookup_value",
+    },
+  ],
 };
 
 // ===================
 // CHIEF COMPLAINTS
 // ===================
 
+// Add single chief complaint
 exports.addChiefComplaint = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -102,8 +110,6 @@ exports.addChiefComplaint = async (req, res) => {
     );
 
     const oldValue = medicalHistory.toObject();
-
-    // Add new chief complaint
     medicalHistory.ChiefComplaints.push(ChiefComplaint);
     medicalHistory.UpdatedBy = CreatedBy;
     await medicalHistory.save({ session });
@@ -120,7 +126,6 @@ exports.addChiefComplaint = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Populate and return
     const populated = await MedicalHistory.findById(medicalHistory._id)
       .populate(populateConfigs.ChiefComplaints)
       .populate("CaseFileId", "CaseFileNumber Date")
@@ -134,6 +139,54 @@ exports.addChiefComplaint = async (req, res) => {
   }
 };
 
+// Add multiple chief complaints
+exports.addChiefComplaints = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, ChiefComplaints, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    ChiefComplaints.forEach((complaint) => {
+      medicalHistory.ChiefComplaints.push(complaint);
+    });
+
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_CHIEF_COMPLAINTS",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.ChiefComplaints)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit single chief complaint
 exports.editChiefComplaint = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -152,8 +205,6 @@ exports.editChiefComplaint = async (req, res) => {
     }
 
     const oldValue = medicalHistory.toObject();
-
-    // Find and update the specific chief complaint
     const complaintIndex = medicalHistory.ChiefComplaints.findIndex(
       (complaint) => complaint._id.toString() === _id.toString()
     );
@@ -184,7 +235,54 @@ exports.editChiefComplaint = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Populate and return
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.ChiefComplaints)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit multiple chief complaints (replace all)
+exports.editChiefComplaints = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, ChiefComplaints, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.ChiefComplaints = ChiefComplaints;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_CHIEF_COMPLAINTS",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
     const populated = await MedicalHistory.findById(medicalHistory._id)
       .populate(populateConfigs.ChiefComplaints)
       .populate("CaseFileId", "CaseFileNumber Date")
@@ -206,7 +304,6 @@ exports.listChiefComplaints = async (req, res) => {
     if (CaseFileId) query.CaseFileId = CaseFileId;
     if (PatientId) query.PatientId = PatientId;
 
-    // Search in symptoms
     let pipeline = [
       { $match: query },
       {
@@ -255,13 +352,10 @@ exports.listChiefComplaints = async (req, res) => {
     );
 
     const results = await MedicalHistory.aggregate(pipeline);
-
-    // Populate symptoms, duration units, and aggravating factors
-    const populatedResults = await MedicalHistory.populate(results, [
-      { path: "ChiefComplaints.Symptoms", select: "lookup_value" },
-      { path: "ChiefComplaints.Duration.Unit", select: "lookup_value" },
-      { path: "ChiefComplaints.AggravatingFactors", select: "lookup_value" },
-    ]);
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateConfigs.ChiefComplaints
+    );
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -287,6 +381,7 @@ exports.listChiefComplaints = async (req, res) => {
 // CLINICAL DIAGNOSES
 // ===================
 
+// Add single clinical diagnosis
 exports.addClinicalDiagnosis = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -301,7 +396,6 @@ exports.addClinicalDiagnosis = async (req, res) => {
     );
 
     const oldValue = medicalHistory.toObject();
-
     medicalHistory.ClinicalDiagnoses.push(ClinicalDiagnosis);
     medicalHistory.UpdatedBy = CreatedBy;
     await medicalHistory.save({ session });
@@ -331,6 +425,54 @@ exports.addClinicalDiagnosis = async (req, res) => {
   }
 };
 
+// Add multiple clinical diagnoses
+exports.addClinicalDiagnoses = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, ClinicalDiagnoses, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    ClinicalDiagnoses.forEach((diagnosis) => {
+      medicalHistory.ClinicalDiagnoses.push(diagnosis);
+    });
+
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_CLINICAL_DIAGNOSES",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.ClinicalDiagnoses)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit single clinical diagnosis
 exports.editClinicalDiagnosis = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -349,7 +491,6 @@ exports.editClinicalDiagnosis = async (req, res) => {
     }
 
     const oldValue = medicalHistory.toObject();
-
     const diagnosisIndex = medicalHistory.ClinicalDiagnoses.findIndex(
       (diagnosis) => diagnosis._id.toString() === _id.toString()
     );
@@ -371,6 +512,54 @@ exports.editClinicalDiagnosis = async (req, res) => {
     await __CreateAuditLog(
       "medical_history",
       "EDIT_CLINICAL_DIAGNOSIS",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.ClinicalDiagnoses)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit multiple clinical diagnoses (replace all)
+exports.editClinicalDiagnoses = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, ClinicalDiagnoses, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.ClinicalDiagnoses = ClinicalDiagnoses;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_CLINICAL_DIAGNOSES",
       null,
       oldValue,
       medicalHistory.toObject(),
@@ -430,15 +619,10 @@ exports.listClinicalDiagnoses = async (req, res) => {
     ];
 
     const results = await MedicalHistory.aggregate(pipeline);
-
-    const populatedResults = await MedicalHistory.populate(results, [
-      {
-        path: "ClinicalDiagnoses.InvestigationCategory",
-        select: "lookup_value",
-      },
-      { path: "ClinicalDiagnoses.Investigation", select: "lookup_value" },
-      { path: "ClinicalDiagnoses.Abnormalities", select: "lookup_value" },
-    ]);
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateConfigs.ClinicalDiagnoses
+    );
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -461,360 +645,10 @@ exports.listClinicalDiagnoses = async (req, res) => {
 };
 
 // ===================
-// MEDICINES PRESCRIBED
-// ===================
-
-exports.addMedicinesPrescribed = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const { CaseFileId, MedicinesPrescribed, CreatedBy } = req.body;
-
-    const medicalHistory = await getOrCreateMedicalHistory(
-      CaseFileId,
-      req.caseFile.PatientId,
-      CreatedBy,
-      session
-    );
-
-    const oldValue = medicalHistory.toObject();
-
-    // Set the entire MedicinesPrescribed object (which can contain multiple medicines)
-    medicalHistory.MedicinesPrescribed = MedicinesPrescribed;
-    medicalHistory.UpdatedBy = CreatedBy;
-    await medicalHistory.save({ session });
-
-    await __CreateAuditLog(
-      "medical_history",
-      "ADD_MEDICINES_PRESCRIBED",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    const populated = await MedicalHistory.findById(medicalHistory._id)
-      .populate(populateConfigs.MedicinesPrescribed)
-      .populate("CaseFileId", "CaseFileNumber Date")
-      .populate("PatientId", "Name PatientId");
-
-    return res.json(__requestResponse("200", __SUCCESS, populated));
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-exports.editMedicinesPrescribed = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const { CaseFileId, MedicinesPrescribed, UpdatedBy } = req.body;
-
-    const medicalHistory = await MedicalHistory.findOne({
-      CaseFileId,
-      IsDeleted: false,
-    }).session(session);
-
-    if (!medicalHistory) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.json(__requestResponse("404", "Medical History not found"));
-    }
-
-    const oldValue = medicalHistory.toObject();
-
-    // Replace the entire MedicinesPrescribed object
-    medicalHistory.MedicinesPrescribed = MedicinesPrescribed;
-    medicalHistory.UpdatedBy = UpdatedBy;
-    await medicalHistory.save({ session });
-
-    await __CreateAuditLog(
-      "medical_history",
-      "EDIT_MEDICINES_PRESCRIBED",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    const populated = await MedicalHistory.findById(medicalHistory._id)
-      .populate(populateConfigs.MedicinesPrescribed)
-      .populate("CaseFileId", "CaseFileNumber Date")
-      .populate("PatientId", "Name PatientId");
-
-    return res.json(__requestResponse("200", __SUCCESS, populated));
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-// Add individual medicine to existing MedicinesPrescribed
-exports.addMedicine = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const { CaseFileId, Medicine, CreatedBy } = req.body;
-
-    const medicalHistory = await getOrCreateMedicalHistory(
-      CaseFileId,
-      req.caseFile.PatientId,
-      CreatedBy,
-      session
-    );
-
-    const oldValue = medicalHistory.toObject();
-
-    // Initialize MedicinesPrescribed if it doesn't exist
-    if (!medicalHistory.MedicinesPrescribed) {
-      medicalHistory.MedicinesPrescribed = {
-        Medicines: [],
-        RecoveryCycle: { Value: 0, Unit: null },
-        PrescriptionUrls: [],
-      };
-    }
-
-    // Add the new medicine to the existing medicines array
-    medicalHistory.MedicinesPrescribed.Medicines.push(Medicine);
-    medicalHistory.UpdatedBy = CreatedBy;
-    await medicalHistory.save({ session });
-
-    await __CreateAuditLog(
-      "medical_history",
-      "ADD_MEDICINE",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    const populated = await MedicalHistory.findById(medicalHistory._id)
-      .populate(populateConfigs.MedicinesPrescribed)
-      .populate("CaseFileId", "CaseFileNumber Date")
-      .populate("PatientId", "Name PatientId");
-
-    return res.json(__requestResponse("200", __SUCCESS, populated));
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-// Edit individual medicine within MedicinesPrescribed
-exports.editMedicine = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const { _id, CaseFileId, Medicine, UpdatedBy } = req.body;
-
-    const medicalHistory = await MedicalHistory.findOne({
-      CaseFileId,
-      IsDeleted: false,
-    }).session(session);
-
-    if (!medicalHistory || !medicalHistory.MedicinesPrescribed) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.json(
-        __requestResponse(
-          "404",
-          "Medical History or Medicines Prescribed not found"
-        )
-      );
-    }
-
-    const oldValue = medicalHistory.toObject();
-
-    // Find and update the specific medicine
-    const medicineIndex =
-      medicalHistory.MedicinesPrescribed.Medicines.findIndex(
-        (med) => med._id.toString() === _id.toString()
-      );
-
-    if (medicineIndex === -1) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.json(__requestResponse("404", "Medicine not found"));
-    }
-
-    medicalHistory.MedicinesPrescribed.Medicines[medicineIndex] = {
-      ...medicalHistory.MedicinesPrescribed.Medicines[medicineIndex].toObject(),
-      ...Medicine,
-      _id: _id,
-    };
-    medicalHistory.UpdatedBy = UpdatedBy;
-    await medicalHistory.save({ session });
-
-    await __CreateAuditLog(
-      "medical_history",
-      "EDIT_MEDICINE",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    const populated = await MedicalHistory.findById(medicalHistory._id)
-      .populate(populateConfigs.MedicinesPrescribed)
-      .populate("CaseFileId", "CaseFileNumber Date")
-      .populate("PatientId", "Name PatientId");
-
-    return res.json(__requestResponse("200", __SUCCESS, populated));
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-// List medicines with individual medicine details
-exports.listMedicinesPrescribed = async (req, res) => {
-  try {
-    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
-
-    const query = { IsDeleted: false };
-    if (CaseFileId) query.CaseFileId = CaseFileId;
-    if (PatientId) query.PatientId = PatientId;
-
-    // Since MedicinesPrescribed is a single object, we don't unwind it, but we can unwind individual medicines if needed
-    let pipeline = [
-      { $match: query },
-      { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
-    ];
-
-    // If we want to show individual medicines, we can unwind them
-    if (req.query.expandMedicines === "true") {
-      pipeline.push({
-        $unwind: {
-          path: "$MedicinesPrescribed.Medicines",
-          preserveNullAndEmptyArrays: true,
-        },
-      });
-    }
-
-    pipeline.push(
-      { $skip: (page - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) },
-      {
-        $lookup: {
-          from: "patient_case_files",
-          localField: "CaseFileId",
-          foreignField: "_id",
-          as: "CaseFile",
-        },
-      },
-      {
-        $lookup: {
-          from: "patient_masters",
-          localField: "PatientId",
-          foreignField: "_id",
-          as: "Patient",
-        },
-      }
-    );
-
-    const results = await MedicalHistory.aggregate(pipeline);
-
-    const populatedResults = await MedicalHistory.populate(results, [
-      {
-        path: "MedicinesPrescribed.Medicines.MedicineName",
-        select: "lookup_value",
-      },
-      { path: "MedicinesPrescribed.Medicines.Dosage", select: "lookup_value" },
-      {
-        path: "MedicinesPrescribed.RecoveryCycle.Unit",
-        select: "lookup_value",
-      },
-    ]);
-
-    const total = await MedicalHistory.countDocuments({
-      ...query,
-      MedicinesPrescribed: { $exists: true, $ne: null },
-    });
-
-    return res.json(
-      __requestResponse("200", __SUCCESS, {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
-        list: __deepClone(populatedResults),
-      })
-    );
-  } catch (error) {
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-// Delete individual medicine
-exports.deleteMedicine = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const { CaseFileId, medicineId } = req.params;
-
-    const medicalHistory = await MedicalHistory.findOne({
-      CaseFileId,
-      IsDeleted: false,
-    }).session(session);
-
-    if (!medicalHistory || !medicalHistory.MedicinesPrescribed) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.json(
-        __requestResponse(
-          "404",
-          "Medical History or Medicines Prescribed not found"
-        )
-      );
-    }
-
-    const oldValue = medicalHistory.toObject();
-
-    // Remove the specific medicine from the array
-    medicalHistory.MedicinesPrescribed.Medicines.pull({ _id: medicineId });
-    await medicalHistory.save({ session });
-
-    await __CreateAuditLog(
-      "medical_history",
-      "DELETE_MEDICINE",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return res.json(__requestResponse("200", "Medicine deleted successfully"));
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-// ===================
 // THERAPIES
 // ===================
 
+// Add single therapy
 exports.addTherapy = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -829,7 +663,6 @@ exports.addTherapy = async (req, res) => {
     );
 
     const oldValue = medicalHistory.toObject();
-
     medicalHistory.Therapies.push(Therapy);
     medicalHistory.UpdatedBy = CreatedBy;
     await medicalHistory.save({ session });
@@ -859,6 +692,54 @@ exports.addTherapy = async (req, res) => {
   }
 };
 
+// Add multiple therapies
+exports.addTherapies = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, Therapies, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    Therapies.forEach((therapy) => {
+      medicalHistory.Therapies.push(therapy);
+    });
+
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_THERAPIES",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.Therapies)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit single therapy
 exports.editTherapy = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -877,7 +758,6 @@ exports.editTherapy = async (req, res) => {
     }
 
     const oldValue = medicalHistory.toObject();
-
     const therapyIndex = medicalHistory.Therapies.findIndex(
       (therapy) => therapy._id.toString() === _id.toString()
     );
@@ -899,6 +779,54 @@ exports.editTherapy = async (req, res) => {
     await __CreateAuditLog(
       "medical_history",
       "EDIT_THERAPY",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.Therapies)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit multiple therapies (replace all)
+exports.editTherapies = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, Therapies, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.Therapies = Therapies;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_THERAPIES",
       null,
       oldValue,
       medicalHistory.toObject(),
@@ -953,11 +881,10 @@ exports.listTherapies = async (req, res) => {
     ];
 
     const results = await MedicalHistory.aggregate(pipeline);
-
-    const populatedResults = await MedicalHistory.populate(results, [
-      { path: "Therapies.TherapyName", select: "lookup_value" },
-      { path: "Therapies.PatientResponse", select: "lookup_value" },
-    ]);
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateConfigs.Therapies
+    );
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -980,10 +907,333 @@ exports.listTherapies = async (req, res) => {
 };
 
 // ===================
-// MAIN MEDICAL HISTORY
+// MEDICINES PRESCRIBED (Keep existing functions)
 // ===================
 
-// Save complete Medical History
+exports.addMedicinesPrescribed = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, MedicinesPrescribed, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.MedicinesPrescribed = MedicinesPrescribed;
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_MEDICINES_PRESCRIBED",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.MedicinesPrescribed)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.editMedicinesPrescribed = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, MedicinesPrescribed, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.MedicinesPrescribed = MedicinesPrescribed;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_MEDICINES_PRESCRIBED",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.MedicinesPrescribed)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.addMedicine = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, Medicine, CreatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      CreatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+
+    if (!medicalHistory.MedicinesPrescribed) {
+      medicalHistory.MedicinesPrescribed = {
+        Medicines: [],
+        RecoveryCycle: { Value: 0, Unit: null },
+        PrescriptionUrls: [],
+      };
+    }
+
+    medicalHistory.MedicinesPrescribed.Medicines.push(Medicine);
+    medicalHistory.UpdatedBy = CreatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "ADD_MEDICINE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.MedicinesPrescribed)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.editMedicine = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { _id, CaseFileId, Medicine, UpdatedBy } = req.body;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory || !medicalHistory.MedicinesPrescribed) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(
+        __requestResponse(
+          "404",
+          "Medical History or Medicines Prescribed not found"
+        )
+      );
+    }
+
+    const oldValue = medicalHistory.toObject();
+    const medicineIndex =
+      medicalHistory.MedicinesPrescribed.Medicines.findIndex(
+        (med) => med._id.toString() === _id.toString()
+      );
+
+    if (medicineIndex === -1) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medicine not found"));
+    }
+
+    medicalHistory.MedicinesPrescribed.Medicines[medicineIndex] = {
+      ...medicalHistory.MedicinesPrescribed.Medicines[medicineIndex].toObject(),
+      ...Medicine,
+      _id: _id,
+    };
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "EDIT_MEDICINE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate(populateConfigs.MedicinesPrescribed)
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listMedicinesPrescribed = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
+    ];
+
+    if (req.query.expandMedicines === "true") {
+      pipeline.push({
+        $unwind: {
+          path: "$MedicinesPrescribed.Medicines",
+          preserveNullAndEmptyArrays: true,
+        },
+      });
+    }
+
+    pipeline.push(
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      }
+    );
+
+    const results = await MedicalHistory.aggregate(pipeline);
+    const populatedResults = await MedicalHistory.populate(
+      results,
+      populateConfigs.MedicinesPrescribed
+    );
+
+    const total = await MedicalHistory.countDocuments({
+      ...query,
+      MedicinesPrescribed: { $exists: true, $ne: null },
+    });
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+        list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.deleteMedicine = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, medicineId } = req.params;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId,
+      IsDeleted: false,
+    }).session(session);
+
+    if (!medicalHistory || !medicalHistory.MedicinesPrescribed) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(
+        __requestResponse(
+          "404",
+          "Medical History or Medicines Prescribed not found"
+        )
+      );
+    }
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.MedicinesPrescribed.Medicines.pull({ _id: medicineId });
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "DELETE_MEDICINE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json(__requestResponse("200", "Medicine deleted successfully"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Keep all existing main medical history functions unchanged
 exports.saveMedicalHistory = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -1040,7 +1290,6 @@ exports.saveMedicalHistory = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Populate all references
     const populatedHistory = await MedicalHistory.findById(medicalHistory._id)
       .populate("CaseFileId")
       .populate("PatientId")
@@ -1059,7 +1308,6 @@ exports.saveMedicalHistory = async (req, res) => {
   }
 };
 
-// Complete Medical History List
 exports.medicalHistoryList = async (req, res) => {
   try {
     const {
@@ -1195,7 +1443,6 @@ exports.deleteMedicalHistory = async (req, res) => {
   }
 };
 
-// Delete section item
 exports.deleteSectionItem = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -1215,7 +1462,6 @@ exports.deleteSectionItem = async (req, res) => {
 
     const oldValue = medicalHistory.toObject();
 
-    // Handle MedicinesPrescribed differently since it's a single object
     if (sectionName === "MedicinesPrescribed") {
       medicalHistory.MedicinesPrescribed = {
         Medicines: [],

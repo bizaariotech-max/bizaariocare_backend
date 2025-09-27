@@ -24,8 +24,8 @@ const DurationSchema = new Schema(
     Unit: { type: Schema.Types.ObjectId, ref: "admin_lookups" },
   },
   {
-    _id: true,
-    timestamps: true,
+    // _id: true,
+    // timestamps: true,
   }
 );
 
