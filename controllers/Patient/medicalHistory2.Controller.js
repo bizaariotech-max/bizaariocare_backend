@@ -2714,7 +2714,7 @@ exports.saveMedicalHistory = async (req, res) => {
   }
 };
 
-exports.medicalHistoryList = async (req, res) => {
+exports.medicalHistoryListxx = async (req, res) => {
   try {
     const {
       page = 1,
@@ -2778,7 +2778,599 @@ exports.medicalHistoryList = async (req, res) => {
   }
 };
 
-exports.getMedicalHistoryById = async (req, res) => {
+exports.medicalHistoryList = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      CaseFileId,
+      PatientId,
+      Status,
+      FromDate,
+      ToDate,
+      search,
+    } = req.query;
+
+    // Build base query
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = new mongoose.Types.ObjectId(CaseFileId);
+    if (PatientId) query.PatientId = new mongoose.Types.ObjectId(PatientId);
+    if (Status) query.Status = Status;
+
+    // Date range filter
+    if (FromDate || ToDate) {
+      query.createdAt = {};
+      if (FromDate) query.createdAt.$gte = new Date(FromDate);
+      if (ToDate) query.createdAt.$lte = new Date(ToDate);
+    }
+
+    // Text search
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [{ Notes: regex }, { Status: regex }];
+    }
+
+    // Get total count first
+    const total = await MedicalHistory.countDocuments(query);
+
+    // Build aggregation pipeline
+    let pipeline = [
+      { $match: query },
+
+      // Join case file data
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFileData",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                CaseFileNumber: 1,
+                Date: 1,
+                TreatmentType: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      // Join patient data
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "PatientData",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+
+      // Join created by user from asset_masters
+      {
+        $lookup: {
+          from: "asset_masters",
+          localField: "CreatedBy",
+          foreignField: "_id",
+          as: "CreatedByData",
+          pipeline: [{ $project: { _id: 1, Name: 1 } }],
+        },
+      },
+
+      // Join updated by user from asset_masters
+      {
+        $lookup: {
+          from: "asset_masters",
+          localField: "UpdatedBy",
+          foreignField: "_id",
+          as: "UpdatedByData",
+          pipeline: [{ $project: { _id: 1, Name: 1 } }],
+        },
+      },
+
+      // Join lookup data for population
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptomLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Duration.Unit",
+          foreignField: "_id",
+          as: "durationUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.AggravatingFactors",
+          foreignField: "_id",
+          as: "aggravatingFactorLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.InvestigationCategory",
+          foreignField: "_id",
+          as: "investigationCategoryLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Investigation",
+          foreignField: "_id",
+          as: "investigationLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Abnormalities",
+          foreignField: "_id",
+          as: "abnormalityLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.Medicines.MedicineName",
+          foreignField: "_id",
+          as: "medicineNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.Medicines.Dosage",
+          foreignField: "_id",
+          as: "medicineDosageLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.RecoveryCycle.Unit",
+          foreignField: "_id",
+          as: "medicineRecoveryUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Therapies.TherapyName",
+          foreignField: "_id",
+          as: "therapyNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.MedicalSpeciality",
+          foreignField: "_id",
+          as: "surgerySpecialityLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.SurgeryProcedureName",
+          foreignField: "_id",
+          as: "surgeryProcedureNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.RecoveryCycle.Unit",
+          foreignField: "_id",
+          as: "surgeryRecoveryUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.PostSurgeryComplications",
+          foreignField: "_id",
+          as: "surgeryComplicationLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+
+      // Project with populated data
+      {
+        $addFields: {
+          CaseFileId: { $arrayElemAt: ["$CaseFileData", 0] },
+          PatientId: { $arrayElemAt: ["$PatientData", 0] },
+          CreatedBy: { $arrayElemAt: ["$CreatedByData", 0] },
+          UpdatedBy: { $arrayElemAt: ["$UpdatedByData", 0] },
+
+          // Populate Chief Complaints
+          ChiefComplaints: {
+            $map: {
+              input: "$ChiefComplaints",
+              as: "complaint",
+              in: {
+                _id: "$$complaint._id",
+                Symptoms: {
+                  $map: {
+                    input: "$$complaint.Symptoms",
+                    as: "symptomId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$symptomLookups",
+                            cond: { $eq: ["$$this._id", "$$symptomId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                Duration: {
+                  Value: "$$complaint.Duration.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$durationUnitLookups",
+                          cond: {
+                            $eq: ["$$this._id", "$$complaint.Duration.Unit"],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$$complaint.Duration._id",
+                },
+                SeverityGrade: "$$complaint.SeverityGrade",
+                AggravatingFactors: {
+                  $map: {
+                    input: "$$complaint.AggravatingFactors",
+                    as: "factorId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$aggravatingFactorLookups",
+                            cond: { $eq: ["$$this._id", "$$factorId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                createdAt: "$$complaint.createdAt",
+                updatedAt: "$$complaint.updatedAt",
+              },
+            },
+          },
+
+          // Populate Clinical Diagnoses
+          ClinicalDiagnoses: {
+            $map: {
+              input: "$ClinicalDiagnoses",
+              as: "diagnosis",
+              in: {
+                _id: "$$diagnosis._id",
+                Date: "$$diagnosis.Date",
+                InvestigationCategory: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$investigationCategoryLookups",
+                        cond: {
+                          $eq: [
+                            "$$this._id",
+                            "$$diagnosis.InvestigationCategory",
+                          ],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                Investigation: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$investigationLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$diagnosis.Investigation"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                Abnormalities: {
+                  $map: {
+                    input: "$$diagnosis.Abnormalities",
+                    as: "abnormalityId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$abnormalityLookups",
+                            cond: { $eq: ["$$this._id", "$$abnormalityId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                ReportUrl: "$$diagnosis.ReportUrl",
+                InterpretationUrl: "$$diagnosis.InterpretationUrl",
+                createdAt: "$$diagnosis.createdAt",
+                updatedAt: "$$diagnosis.updatedAt",
+              },
+            },
+          },
+
+          // Populate Medicines Prescribed
+          MedicinesPrescribed: {
+            $cond: {
+              if: { $ne: ["$MedicinesPrescribed", null] },
+              then: {
+                _id: "$MedicinesPrescribed._id",
+                Medicines: {
+                  $map: {
+                    input: "$MedicinesPrescribed.Medicines",
+                    as: "medicine",
+                    in: {
+                      _id: "$$medicine._id",
+                      MedicineName: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$medicineNameLookups",
+                              cond: {
+                                $eq: ["$$this._id", "$$medicine.MedicineName"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      Dosage: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$medicineDosageLookups",
+                              cond: {
+                                $eq: ["$$this._id", "$$medicine.Dosage"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      DurationInDays: "$$medicine.DurationInDays",
+                      createdAt: "$$medicine.createdAt",
+                      updatedAt: "$$medicine.updatedAt",
+                    },
+                  },
+                },
+                RecoveryCycle: {
+                  Value: "$MedicinesPrescribed.RecoveryCycle.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$medicineRecoveryUnitLookups",
+                          cond: {
+                            $eq: [
+                              "$$this._id",
+                              "$MedicinesPrescribed.RecoveryCycle.Unit",
+                            ],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$MedicinesPrescribed.RecoveryCycle._id",
+                },
+                PrescriptionUrls: "$MedicinesPrescribed.PrescriptionUrls",
+                createdAt: "$MedicinesPrescribed.createdAt",
+                updatedAt: "$MedicinesPrescribed.updatedAt",
+              },
+              else: null,
+            },
+          },
+
+          // Populate Therapies
+          Therapies: {
+            $map: {
+              input: "$Therapies",
+              as: "therapy",
+              in: {
+                _id: "$$therapy._id",
+                TherapyName: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$therapyNameLookups",
+                        cond: { $eq: ["$$this._id", "$$therapy.TherapyName"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                PatientResponse: "$$therapy.PatientResponse",
+                createdAt: "$$therapy.createdAt",
+                updatedAt: "$$therapy.updatedAt",
+              },
+            },
+          },
+
+          // Populate Surgeries Procedures
+          SurgeriesProcedures: {
+            $map: {
+              input: "$SurgeriesProcedures",
+              as: "surgery",
+              in: {
+                _id: "$$surgery._id",
+                Date: "$$surgery.Date",
+                HospitalClinicName: "$$surgery.HospitalClinicName",
+                SurgeonName: "$$surgery.SurgeonName",
+                SurgeonNumber: "$$surgery.SurgeonNumber",
+                MedicalSpeciality: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$surgerySpecialityLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$surgery.MedicalSpeciality"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                SurgeryProcedureName: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$surgeryProcedureNameLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$surgery.SurgeryProcedureName"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                AnaesthesiaType: "$$surgery.AnaesthesiaType",
+                BloodTransfusionNeeded: "$$surgery.BloodTransfusionNeeded",
+                RecoveryCycle: {
+                  Value: "$$surgery.RecoveryCycle.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$surgeryRecoveryUnitLookups",
+                          cond: {
+                            $eq: ["$$this._id", "$$surgery.RecoveryCycle.Unit"],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$$surgery.RecoveryCycle._id",
+                },
+                PostSurgeryComplications: {
+                  $map: {
+                    input: "$$surgery.PostSurgeryComplications",
+                    as: "complicationId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$surgeryComplicationLookups",
+                            cond: { $eq: ["$$this._id", "$$complicationId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                DischargeSummaryUrlNote: "$$surgery.DischargeSummaryUrlNote",
+                createdAt: "$$surgery.createdAt",
+                updatedAt: "$$surgery.updatedAt",
+              },
+            },
+          },
+        },
+      },
+
+      // Remove temporary lookup arrays
+      {
+        $project: {
+          CaseFileData: 0,
+          PatientData: 0,
+          CreatedByData: 0,
+          UpdatedByData: 0,
+          symptomLookups: 0,
+          durationUnitLookups: 0,
+          aggravatingFactorLookups: 0,
+          investigationCategoryLookups: 0,
+          investigationLookups: 0,
+          abnormalityLookups: 0,
+          medicineNameLookups: 0,
+          medicineDosageLookups: 0,
+          medicineRecoveryUnitLookups: 0,
+          therapyNameLookups: 0,
+          surgerySpecialityLookups: 0,
+          surgeryProcedureNameLookups: 0,
+          surgeryRecoveryUnitLookups: 0,
+          surgeryComplicationLookups: 0,
+        },
+      },
+
+      // Sort by latest first
+      { $sort: { createdAt: -1 } },
+
+      // Pagination
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+        filters: {
+          CaseFileId,
+          PatientId,
+          Status,
+          FromDate,
+          ToDate,
+          search,
+        },
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.getMedicalHistoryByIdxxx = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -2804,6 +3396,539 @@ exports.getMedicalHistoryById = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+exports.getMedicalHistoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Use the same aggregation approach as the list API
+    let pipeline = [
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+          IsDeleted: false,
+        },
+      },
+
+      // Join case file data
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFileData",
+        },
+      },
+
+      // Join patient data
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "PatientData",
+        },
+      },
+
+      // Join created by user from asset_masters
+      {
+        $lookup: {
+          from: "asset_masters",
+          localField: "CreatedBy",
+          foreignField: "_id",
+          as: "CreatedByData",
+          pipeline: [{ $project: { _id: 1, Name: 1, Email: 1 } }],
+        },
+      },
+
+      // Join updated by user from asset_masters
+      {
+        $lookup: {
+          from: "asset_masters",
+          localField: "UpdatedBy",
+          foreignField: "_id",
+          as: "UpdatedByData",
+          pipeline: [{ $project: { _id: 1, Name: 1, Email: 1 } }],
+        },
+      },
+
+      // Join all lookup data (same as list API)
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptomLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Duration.Unit",
+          foreignField: "_id",
+          as: "durationUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.AggravatingFactors",
+          foreignField: "_id",
+          as: "aggravatingFactorLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.InvestigationCategory",
+          foreignField: "_id",
+          as: "investigationCategoryLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Investigation",
+          foreignField: "_id",
+          as: "investigationLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Abnormalities",
+          foreignField: "_id",
+          as: "abnormalityLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.Medicines.MedicineName",
+          foreignField: "_id",
+          as: "medicineNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.Medicines.Dosage",
+          foreignField: "_id",
+          as: "medicineDosageLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "MedicinesPrescribed.RecoveryCycle.Unit",
+          foreignField: "_id",
+          as: "medicineRecoveryUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Therapies.TherapyName",
+          foreignField: "_id",
+          as: "therapyNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.MedicalSpeciality",
+          foreignField: "_id",
+          as: "surgerySpecialityLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.SurgeryProcedureName",
+          foreignField: "_id",
+          as: "surgeryProcedureNameLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.RecoveryCycle.Unit",
+          foreignField: "_id",
+          as: "surgeryRecoveryUnitLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.PostSurgeryComplications",
+          foreignField: "_id",
+          as: "surgeryComplicationLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+
+      // Apply same population logic as list API
+      {
+        $addFields: {
+          CaseFileId: { $arrayElemAt: ["$CaseFileData", 0] },
+          PatientId: { $arrayElemAt: ["$PatientData", 0] },
+          CreatedBy: { $arrayElemAt: ["$CreatedByData", 0] },
+          UpdatedBy: { $arrayElemAt: ["$UpdatedByData", 0] },
+
+          // Same population logic as list API (copy from above)
+          ChiefComplaints: {
+            $map: {
+              input: "$ChiefComplaints",
+              as: "complaint",
+              in: {
+                _id: "$$complaint._id",
+                Symptoms: {
+                  $map: {
+                    input: "$$complaint.Symptoms",
+                    as: "symptomId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$symptomLookups",
+                            cond: { $eq: ["$$this._id", "$$symptomId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                Duration: {
+                  Value: "$$complaint.Duration.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$durationUnitLookups",
+                          cond: {
+                            $eq: ["$$this._id", "$$complaint.Duration.Unit"],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$$complaint.Duration._id",
+                },
+                SeverityGrade: "$$complaint.SeverityGrade",
+                AggravatingFactors: {
+                  $map: {
+                    input: "$$complaint.AggravatingFactors",
+                    as: "factorId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$aggravatingFactorLookups",
+                            cond: { $eq: ["$$this._id", "$$factorId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                createdAt: "$$complaint.createdAt",
+                updatedAt: "$$complaint.updatedAt",
+              },
+            },
+          },
+
+          // Copy all other population logic from list API...
+          ClinicalDiagnoses: {
+            $map: {
+              input: "$ClinicalDiagnoses",
+              as: "diagnosis",
+              in: {
+                _id: "$$diagnosis._id",
+                Date: "$$diagnosis.Date",
+                InvestigationCategory: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$investigationCategoryLookups",
+                        cond: {
+                          $eq: [
+                            "$$this._id",
+                            "$$diagnosis.InvestigationCategory",
+                          ],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                Investigation: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$investigationLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$diagnosis.Investigation"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                Abnormalities: {
+                  $map: {
+                    input: "$$diagnosis.Abnormalities",
+                    as: "abnormalityId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$abnormalityLookups",
+                            cond: { $eq: ["$$this._id", "$$abnormalityId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                ReportUrl: "$$diagnosis.ReportUrl",
+                InterpretationUrl: "$$diagnosis.InterpretationUrl",
+                createdAt: "$$diagnosis.createdAt",
+                updatedAt: "$$diagnosis.updatedAt",
+              },
+            },
+          },
+
+          MedicinesPrescribed: {
+            $cond: {
+              if: { $ne: ["$MedicinesPrescribed", null] },
+              then: {
+                _id: "$MedicinesPrescribed._id",
+                Medicines: {
+                  $map: {
+                    input: "$MedicinesPrescribed.Medicines",
+                    as: "medicine",
+                    in: {
+                      _id: "$$medicine._id",
+                      MedicineName: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$medicineNameLookups",
+                              cond: {
+                                $eq: ["$$this._id", "$$medicine.MedicineName"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      Dosage: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$medicineDosageLookups",
+                              cond: {
+                                $eq: ["$$this._id", "$$medicine.Dosage"],
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      DurationInDays: "$$medicine.DurationInDays",
+                      createdAt: "$$medicine.createdAt",
+                      updatedAt: "$$medicine.updatedAt",
+                    },
+                  },
+                },
+                RecoveryCycle: {
+                  Value: "$MedicinesPrescribed.RecoveryCycle.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$medicineRecoveryUnitLookups",
+                          cond: {
+                            $eq: [
+                              "$$this._id",
+                              "$MedicinesPrescribed.RecoveryCycle.Unit",
+                            ],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$MedicinesPrescribed.RecoveryCycle._id",
+                },
+                PrescriptionUrls: "$MedicinesPrescribed.PrescriptionUrls",
+                createdAt: "$MedicinesPrescribed.createdAt",
+                updatedAt: "$MedicinesPrescribed.updatedAt",
+              },
+              else: null,
+            },
+          },
+
+          Therapies: {
+            $map: {
+              input: "$Therapies",
+              as: "therapy",
+              in: {
+                _id: "$$therapy._id",
+                TherapyName: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$therapyNameLookups",
+                        cond: { $eq: ["$$this._id", "$$therapy.TherapyName"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                PatientResponse: "$$therapy.PatientResponse",
+                createdAt: "$$therapy.createdAt",
+                updatedAt: "$$therapy.updatedAt",
+              },
+            },
+          },
+
+          SurgeriesProcedures: {
+            $map: {
+              input: "$SurgeriesProcedures",
+              as: "surgery",
+              in: {
+                _id: "$$surgery._id",
+                Date: "$$surgery.Date",
+                HospitalClinicName: "$$surgery.HospitalClinicName",
+                SurgeonName: "$$surgery.SurgeonName",
+                SurgeonNumber: "$$surgery.SurgeonNumber",
+                MedicalSpeciality: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$surgerySpecialityLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$surgery.MedicalSpeciality"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                SurgeryProcedureName: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$surgeryProcedureNameLookups",
+                        cond: {
+                          $eq: ["$$this._id", "$$surgery.SurgeryProcedureName"],
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                AnaesthesiaType: "$$surgery.AnaesthesiaType",
+                BloodTransfusionNeeded: "$$surgery.BloodTransfusionNeeded",
+                RecoveryCycle: {
+                  Value: "$$surgery.RecoveryCycle.Value",
+                  Unit: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$surgeryRecoveryUnitLookups",
+                          cond: {
+                            $eq: ["$$this._id", "$$surgery.RecoveryCycle.Unit"],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                  _id: "$$surgery.RecoveryCycle._id",
+                },
+                PostSurgeryComplications: {
+                  $map: {
+                    input: "$$surgery.PostSurgeryComplications",
+                    as: "complicationId",
+                    in: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$surgeryComplicationLookups",
+                            cond: { $eq: ["$$this._id", "$$complicationId"] },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                },
+                DischargeSummaryUrlNote: "$$surgery.DischargeSummaryUrlNote",
+                createdAt: "$$surgery.createdAt",
+                updatedAt: "$$surgery.updatedAt",
+              },
+            },
+          },
+        },
+      },
+
+      // Remove temporary lookup arrays
+      {
+        $project: {
+          CaseFileData: 0,
+          PatientData: 0,
+          CreatedByData: 0,
+          UpdatedByData: 0,
+          symptomLookups: 0,
+          durationUnitLookups: 0,
+          aggravatingFactorLookups: 0,
+          investigationCategoryLookups: 0,
+          investigationLookups: 0,
+          abnormalityLookups: 0,
+          medicineNameLookups: 0,
+          medicineDosageLookups: 0,
+          medicineRecoveryUnitLookups: 0,
+          therapyNameLookups: 0,
+          surgerySpecialityLookups: 0,
+          surgeryProcedureNameLookups: 0,
+          surgeryRecoveryUnitLookups: 0,
+          surgeryComplicationLookups: 0,
+        },
+      },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    if (!results || results.length === 0) {
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, results[0]));
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+
 
 exports.deleteMedicalHistory = async (req, res) => {
   const session = await mongoose.startSession();
