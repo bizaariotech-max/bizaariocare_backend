@@ -370,6 +370,152 @@ exports.listChiefComplaintsxx = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+exports.listChiefComplaintsxxx = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$ChiefComplaints",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+    ];
+
+    if (search) {
+      pipeline.push({
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptomDetails",
+        },
+      });
+      pipeline.push({
+        $match: {
+          "symptomDetails.lookup_value": { $regex: search, $options: "i" },
+        },
+      });
+    }
+
+    // Add all lookups with field selection
+    pipeline.push(
+      // Lookup Symptoms - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptoms",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Duration Unit - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Duration.Unit",
+          foreignField: "_id",
+          as: "durationUnit",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Aggravating Factors - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.AggravatingFactors",
+          foreignField: "_id",
+          as: "aggravatingFactors",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Case File
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+        },
+      },
+      // Lookup Patient
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+        },
+      },
+      // Final projection with populated data
+      {
+        $project: {
+          _id: "$ChiefComplaints._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: 1,
+          PatientId: 1,
+          ChiefComplaint: {
+            _id: "$ChiefComplaints._id",
+            Symptoms: "$symptoms",
+            Duration: {
+              Value: "$ChiefComplaints.Duration.Value",
+              Unit: { $arrayElemAt: ["$durationUnit", 0] },
+              _id: "$ChiefComplaints.Duration._id",
+            },
+            SeverityGrade: "$ChiefComplaints.SeverityGrade",
+            AggravatingFactors: "$aggravatingFactors",
+            createdAt: "$ChiefComplaints.createdAt",
+            updatedAt: "$ChiefComplaints.updatedAt",
+          },
+          createdAt: "$ChiefComplaints.createdAt",
+          updatedAt: "$ChiefComplaints.updatedAt",
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+
+      // ADD SORTING HERE - Latest first (descending order)
+      {
+        $sort: {
+          "ChiefComplaint.createdAt": -1, // Primary sort: Latest records first
+          "ChiefComplaint.updatedAt": -1, // Secondary sort: Recently updated first
+        },
+      },
+
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
+    );
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$ChiefComplaints" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 exports.listChiefComplaints = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
@@ -404,49 +550,109 @@ exports.listChiefComplaints = async (req, res) => {
       });
     }
 
-    // Fix: Use only inclusion projection
-    pipeline.push({
-      $project: {
-        _id: "$ChiefComplaints._id",
-        medicalHistoryId: "$_id",
-        CaseFileId: 1,
-        PatientId: 1,
-        ChiefComplaint: "$ChiefComplaints",
-        createdAt: "$ChiefComplaints.createdAt",
-        updatedAt: "$ChiefComplaints.updatedAt",
-        // Remove exclusion fields - just don't include them
-      },
-    });
-
+    // Add all lookups with field selection
     pipeline.push(
-      { $skip: (page - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) },
+      // Lookup Symptoms - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Symptoms",
+          foreignField: "_id",
+          as: "symptoms",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Duration Unit - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.Duration.Unit",
+          foreignField: "_id",
+          as: "durationUnit",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Aggravating Factors - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ChiefComplaints.AggravatingFactors",
+          foreignField: "_id",
+          as: "aggravatingFactors",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Case File - only essential fields
       {
         $lookup: {
           from: "patient_case_files",
           localField: "CaseFileId",
           foreignField: "_id",
           as: "CaseFile",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
+          ],
         },
       },
+      // Lookup Patient - only essential fields
       {
         $lookup: {
           from: "patient_masters",
           localField: "PatientId",
           foreignField: "_id",
           as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
         },
-      }
+      },
+      // Final projection with populated data
+      {
+        $project: {
+          _id: "$ChiefComplaints._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          ChiefComplaint: {
+            _id: "$ChiefComplaints._id",
+            Symptoms: "$symptoms",
+            Duration: {
+              Value: "$ChiefComplaints.Duration.Value",
+              Unit: { $arrayElemAt: ["$durationUnit", 0] },
+              _id: "$ChiefComplaints.Duration._id",
+            },
+            SeverityGrade: "$ChiefComplaints.SeverityGrade",
+            AggravatingFactors: "$aggravatingFactors",
+            createdAt: "$ChiefComplaints.createdAt",
+            updatedAt: "$ChiefComplaints.updatedAt",
+          },
+          createdAt: "$ChiefComplaints.createdAt",
+          updatedAt: "$ChiefComplaints.updatedAt",
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+
+      // Sort by latest first
+      {
+        $sort: {
+          "ChiefComplaint.createdAt": -1,
+          "ChiefComplaint.updatedAt": -1,
+        },
+      },
+
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
     );
 
     const results = await MedicalHistory.aggregate(pipeline);
-
-    // Populate only chief complaint related fields
-    const populatedResults = await MedicalHistory.populate(results, [
-      { path: "ChiefComplaint.Symptoms", select: "lookup_value" },
-      { path: "ChiefComplaint.Duration.Unit", select: "lookup_value" },
-      { path: "ChiefComplaint.AggravatingFactors", select: "lookup_value" },
-    ]);
 
     const total = await MedicalHistory.aggregate([
       { $match: query },
@@ -460,7 +666,7 @@ exports.listChiefComplaints = async (req, res) => {
         page: Number(page),
         limit: Number(limit),
         totalPages: Math.ceil((total[0]?.total || 0) / limit),
-        list: __deepClone(populatedResults),
+        list: __deepClone(results),
       })
     );
   } catch (error) {
@@ -673,69 +879,7 @@ exports.editClinicalDiagnoses = async (req, res) => {
   }
 };
 
-exports.listClinicalDiagnosesxxx = async (req, res) => {
-  try {
-    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
-
-    const query = { IsDeleted: false };
-    if (CaseFileId) query.CaseFileId = CaseFileId;
-    if (PatientId) query.PatientId = PatientId;
-
-    let pipeline = [
-      { $match: query },
-      {
-        $unwind: {
-          path: "$ClinicalDiagnoses",
-          preserveNullAndEmptyArrays: false,
-        },
-      },
-      { $skip: (page - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) },
-      {
-        $lookup: {
-          from: "patient_case_files",
-          localField: "CaseFileId",
-          foreignField: "_id",
-          as: "CaseFile",
-        },
-      },
-      {
-        $lookup: {
-          from: "patient_masters",
-          localField: "PatientId",
-          foreignField: "_id",
-          as: "Patient",
-        },
-      },
-    ];
-
-    const results = await MedicalHistory.aggregate(pipeline);
-    const populatedResults = await MedicalHistory.populate(
-      results,
-      populateConfigs.ClinicalDiagnoses
-    );
-
-    const total = await MedicalHistory.aggregate([
-      { $match: query },
-      { $unwind: "$ClinicalDiagnoses" },
-      { $count: "total" },
-    ]);
-
-    return res.json(
-      __requestResponse("200", __SUCCESS, {
-        total: total[0]?.total || 0,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil((total[0]?.total || 0) / limit),
-        list: __deepClone(populatedResults),
-      })
-    );
-  } catch (error) {
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-exports.listClinicalDiagnoses = async (req, res) => {
+exports.listClinicalDiagnosesxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -807,6 +951,144 @@ exports.listClinicalDiagnoses = async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil((total[0]?.total || 0) / limit),
         list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listClinicalDiagnoses = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$ClinicalDiagnoses",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Investigation Category - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.InvestigationCategory",
+          foreignField: "_id",
+          as: "investigationCategory",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Investigation - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Investigation",
+          foreignField: "_id",
+          as: "investigation",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Abnormalities - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "ClinicalDiagnoses.Abnormalities",
+          foreignField: "_id",
+          as: "abnormalities",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Case File - only essential fields
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
+          ],
+        },
+      },
+      // Lookup Patient - only essential fields
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      // Final projection with populated data
+      {
+        $project: {
+          _id: "$ClinicalDiagnoses._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          ClinicalDiagnosis: {
+            _id: "$ClinicalDiagnoses._id",
+            Date: "$ClinicalDiagnoses.Date",
+            InvestigationCategory: {
+              $arrayElemAt: ["$investigationCategory", 0],
+            },
+            Investigation: { $arrayElemAt: ["$investigation", 0] },
+            Abnormalities: "$abnormalities",
+            ReportUrl: "$ClinicalDiagnoses.ReportUrl",
+            InterpretationUrl: "$ClinicalDiagnoses.InterpretationUrl",
+            createdAt: "$ClinicalDiagnoses.createdAt",
+            updatedAt: "$ClinicalDiagnoses.updatedAt",
+          },
+          createdAt: "$ClinicalDiagnoses.createdAt",
+          updatedAt: "$ClinicalDiagnoses.updatedAt",
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+
+      // Sort by latest first
+      {
+        $sort: {
+          "ClinicalDiagnosis.createdAt": -1,
+          "ClinicalDiagnosis.updatedAt": -1,
+        },
+      },
+
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$ClinicalDiagnoses" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
       })
     );
   } catch (error) {
@@ -1030,63 +1312,6 @@ exports.listTherapiesxxx = async (req, res) => {
     let pipeline = [
       { $match: query },
       { $unwind: { path: "$Therapies", preserveNullAndEmptyArrays: false } },
-      { $skip: (page - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) },
-      {
-        $lookup: {
-          from: "patient_case_files",
-          localField: "CaseFileId",
-          foreignField: "_id",
-          as: "CaseFile",
-        },
-      },
-      {
-        $lookup: {
-          from: "patient_masters",
-          localField: "PatientId",
-          foreignField: "_id",
-          as: "Patient",
-        },
-      },
-    ];
-
-    const results = await MedicalHistory.aggregate(pipeline);
-    const populatedResults = await MedicalHistory.populate(
-      results,
-      populateConfigs.Therapies
-    );
-
-    const total = await MedicalHistory.aggregate([
-      { $match: query },
-      { $unwind: "$Therapies" },
-      { $count: "total" },
-    ]);
-
-    return res.json(
-      __requestResponse("200", __SUCCESS, {
-        total: total[0]?.total || 0,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil((total[0]?.total || 0) / limit),
-        list: __deepClone(populatedResults),
-      })
-    );
-  } catch (error) {
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-exports.listTherapies = async (req, res) => {
-  try {
-    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
-
-    const query = { IsDeleted: false };
-    if (CaseFileId) query.CaseFileId = CaseFileId;
-    if (PatientId) query.PatientId = PatientId;
-
-    let pipeline = [
-      { $match: query },
-      { $unwind: { path: "$Therapies", preserveNullAndEmptyArrays: false } },
       {
         $project: {
           _id: "$Therapies._id",
@@ -1139,6 +1364,128 @@ exports.listTherapies = async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil((total[0]?.total || 0) / limit),
         list: __deepClone(populatedResults),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.listTherapies = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$Therapies",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Therapy Name - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Therapies.TherapyName",
+          foreignField: "_id",
+          as: "therapyName",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Patient Response - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Therapies.PatientResponse",
+          foreignField: "_id",
+          as: "patientResponse",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Case File - only essential fields
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
+          ],
+        },
+      },
+      // Lookup Patient - only essential fields
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      // Final projection with populated data
+      {
+        $project: {
+          _id: "$Therapies._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          Therapy: {
+            _id: "$Therapies._id",
+            TherapyName: { $arrayElemAt: ["$therapyName", 0] },
+            PatientResponse: { $arrayElemAt: ["$patientResponse", 0] },
+            createdAt: "$Therapies.createdAt",
+            updatedAt: "$Therapies.updatedAt",
+          },
+          createdAt: "$Therapies.createdAt",
+          updatedAt: "$Therapies.updatedAt",
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+
+      // Sort by latest first
+      {
+        $sort: {
+          "Therapy.createdAt": -1,
+          "Therapy.updatedAt": -1,
+        },
+      },
+
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$Therapies" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
       })
     );
   } catch (error) {
@@ -1359,75 +1706,7 @@ exports.editMedicine = async (req, res) => {
   }
 };
 
-exports.listMedicinesPrescribedxxx = async (req, res) => {
-  try {
-    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
-
-    const query = { IsDeleted: false };
-    if (CaseFileId) query.CaseFileId = CaseFileId;
-    if (PatientId) query.PatientId = PatientId;
-
-    let pipeline = [
-      { $match: query },
-      { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
-    ];
-
-    if (req.query.expandMedicines === "true") {
-      pipeline.push({
-        $unwind: {
-          path: "$MedicinesPrescribed.Medicines",
-          preserveNullAndEmptyArrays: true,
-        },
-      });
-    }
-
-    pipeline.push(
-      { $skip: (page - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) },
-      {
-        $lookup: {
-          from: "patient_case_files",
-          localField: "CaseFileId",
-          foreignField: "_id",
-          as: "CaseFile",
-        },
-      },
-      {
-        $lookup: {
-          from: "patient_masters",
-          localField: "PatientId",
-          foreignField: "_id",
-          as: "Patient",
-        },
-      }
-    );
-
-    const results = await MedicalHistory.aggregate(pipeline);
-    const populatedResults = await MedicalHistory.populate(
-      results,
-      populateConfigs.MedicinesPrescribed
-    );
-
-    const total = await MedicalHistory.countDocuments({
-      ...query,
-      MedicinesPrescribed: { $exists: true, $ne: null },
-    });
-
-    return res.json(
-      __requestResponse("200", __SUCCESS, {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
-        list: __deepClone(populatedResults),
-      })
-    );
-  } catch (error) {
-    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-  }
-};
-
-exports.listMedicinesPrescribed = async (req, res) => {
+exports.listMedicinesPrescribedxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -1571,6 +1850,310 @@ exports.listMedicinesPrescribed = async (req, res) => {
   }
 };
 
+exports.listMedicinesPrescribed = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
+    ];
+
+    if (req.query.expandMedicines === "true") {
+      // When expanding medicines, unwind individual medicines
+      pipeline.push(
+        {
+          $unwind: {
+            path: "$MedicinesPrescribed.Medicines",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup Medicine Name - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.Medicines.MedicineName",
+            foreignField: "_id",
+            as: "medicineName",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Dosage - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.Medicines.Dosage",
+            foreignField: "_id",
+            as: "dosage",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Recovery Cycle Unit - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.RecoveryCycle.Unit",
+            foreignField: "_id",
+            as: "recoveryCycleUnit",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Case File - only essential fields
+        {
+          $lookup: {
+            from: "patient_case_files",
+            localField: "CaseFileId",
+            foreignField: "_id",
+            as: "CaseFile",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  TreatmentType: 1,
+                  Date: 1,
+                  CaseFileNumber: 1,
+                },
+              },
+            ],
+          },
+        },
+        // Lookup Patient - only essential fields
+        {
+          $lookup: {
+            from: "patient_masters",
+            localField: "PatientId",
+            foreignField: "_id",
+            as: "Patient",
+            pipeline: [
+              { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: "$MedicinesPrescribed.Medicines._id",
+            medicalHistoryId: "$_id",
+            CaseFileId: "$CaseFileId",
+            PatientId: "$PatientId",
+            Medicine: {
+              _id: "$MedicinesPrescribed.Medicines._id",
+              MedicineName: { $arrayElemAt: ["$medicineName", 0] },
+              Dosage: { $arrayElemAt: ["$dosage", 0] },
+              DurationInDays: "$MedicinesPrescribed.Medicines.DurationInDays",
+              createdAt: "$MedicinesPrescribed.Medicines.createdAt",
+              updatedAt: "$MedicinesPrescribed.Medicines.updatedAt",
+            },
+            MedicinesPrescribed: {
+              RecoveryCycle: {
+                Value: "$MedicinesPrescribed.RecoveryCycle.Value",
+                Unit: { $arrayElemAt: ["$recoveryCycleUnit", 0] },
+                _id: "$MedicinesPrescribed.RecoveryCycle._id",
+              },
+              PrescriptionUrls: "$MedicinesPrescribed.PrescriptionUrls",
+              _id: "$MedicinesPrescribed._id",
+            },
+            createdAt: "$MedicinesPrescribed.Medicines.createdAt",
+            updatedAt: "$MedicinesPrescribed.Medicines.updatedAt",
+            CaseFile: 1,
+            Patient: 1,
+          },
+        }
+      );
+    } else {
+      // When not expanding, show complete MedicinesPrescribed objects
+      pipeline.push(
+        // Lookup Recovery Cycle Unit - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.RecoveryCycle.Unit",
+            foreignField: "_id",
+            as: "recoveryCycleUnit",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Medicine Names in the array - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.Medicines.MedicineName",
+            foreignField: "_id",
+            as: "medicineNames",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Dosages in the array - only _id and lookup_value
+        {
+          $lookup: {
+            from: "admin_lookups",
+            localField: "MedicinesPrescribed.Medicines.Dosage",
+            foreignField: "_id",
+            as: "dosages",
+            pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+          },
+        },
+        // Lookup Case File - only essential fields
+        {
+          $lookup: {
+            from: "patient_case_files",
+            localField: "CaseFileId",
+            foreignField: "_id",
+            as: "CaseFile",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  TreatmentType: 1,
+                  Date: 1,
+                  CaseFileNumber: 1,
+                },
+              },
+            ],
+          },
+        },
+        // Lookup Patient - only essential fields
+        {
+          $lookup: {
+            from: "patient_masters",
+            localField: "PatientId",
+            foreignField: "_id",
+            as: "Patient",
+            pipeline: [
+              { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: "$MedicinesPrescribed._id",
+            medicalHistoryId: "$_id",
+            CaseFileId: "$CaseFileId",
+            PatientId: "$PatientId",
+            MedicinesPrescribed: {
+              _id: "$MedicinesPrescribed._id",
+              Medicines: {
+                $map: {
+                  input: "$MedicinesPrescribed.Medicines",
+                  as: "medicine",
+                  in: {
+                    _id: "$$medicine._id",
+                    MedicineName: {
+                      $let: {
+                        vars: {
+                          foundMedicine: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$medicineNames",
+                                  cond: {
+                                    $eq: [
+                                      "$$this._id",
+                                      "$$medicine.MedicineName",
+                                    ],
+                                  },
+                                },
+                              },
+                              0,
+                            ],
+                          },
+                        },
+                        in: "$$foundMedicine",
+                      },
+                    },
+                    Dosage: {
+                      $let: {
+                        vars: {
+                          foundDosage: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$dosages",
+                                  cond: {
+                                    $eq: ["$$this._id", "$$medicine.Dosage"],
+                                  },
+                                },
+                              },
+                              0,
+                            ],
+                          },
+                        },
+                        in: "$$foundDosage",
+                      },
+                    },
+                    DurationInDays: "$$medicine.DurationInDays",
+                    createdAt: "$$medicine.createdAt",
+                    updatedAt: "$$medicine.updatedAt",
+                  },
+                },
+              },
+              RecoveryCycle: {
+                Value: "$MedicinesPrescribed.RecoveryCycle.Value",
+                Unit: { $arrayElemAt: ["$recoveryCycleUnit", 0] },
+                _id: "$MedicinesPrescribed.RecoveryCycle._id",
+              },
+              PrescriptionUrls: "$MedicinesPrescribed.PrescriptionUrls",
+              createdAt: "$MedicinesPrescribed.createdAt",
+              updatedAt: "$MedicinesPrescribed.updatedAt",
+            },
+            createdAt: "$MedicinesPrescribed.createdAt",
+            updatedAt: "$MedicinesPrescribed.updatedAt",
+            CaseFile: 1,
+            Patient: 1,
+          },
+        }
+      );
+    }
+
+    // Add sorting
+    pipeline.push({
+      $sort: {
+        createdAt: -1,
+        updatedAt: -1,
+      },
+    });
+
+    pipeline.push(
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
+    );
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    // Count total based on expand mode
+    let total;
+    if (req.query.expandMedicines === "true") {
+      const countPipeline = await MedicalHistory.aggregate([
+        { $match: query },
+        { $match: { MedicinesPrescribed: { $exists: true, $ne: null } } },
+        { $unwind: "$MedicinesPrescribed.Medicines" },
+        { $count: "total" },
+      ]);
+      total = countPipeline[0]?.total || 0;
+    } else {
+      total = await MedicalHistory.countDocuments({
+        ...query,
+        MedicinesPrescribed: { $exists: true, $ne: null },
+      });
+    }
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+        expandMedicines: req.query.expandMedicines === "true",
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
 
 exports.deleteMedicine = async (req, res) => {
   const session = await mongoose.startSession();
@@ -1823,7 +2406,7 @@ exports.editSurgeriesProcedures = async (req, res) => {
   }
 };
 
-exports.listSurgeriesProcedures = async (req, res) => {
+exports.listSurgeriesProceduresxx = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
@@ -1895,6 +2478,166 @@ exports.listSurgeriesProcedures = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+exports.listSurgeriesProcedures = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      {
+        $unwind: {
+          path: "$SurgeriesProcedures",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Medical Speciality - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.MedicalSpeciality",
+          foreignField: "_id",
+          as: "medicalSpeciality",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Surgery Procedure Name - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.SurgeryProcedureName",
+          foreignField: "_id",
+          as: "surgeryProcedureName",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Recovery Cycle Unit - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.RecoveryCycle.Unit",
+          foreignField: "_id",
+          as: "recoveryCycleUnit",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Post Surgery Complications - only _id and lookup_value
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "SurgeriesProcedures.PostSurgeryComplications",
+          foreignField: "_id",
+          as: "postSurgeryComplications",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      // Lookup Case File - only essential fields
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
+          ],
+        },
+      },
+      // Lookup Patient - only essential fields
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      // Final projection with populated data
+      {
+        $project: {
+          _id: "$SurgeriesProcedures._id",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          SurgeryProcedure: {
+            _id: "$SurgeriesProcedures._id",
+            Date: "$SurgeriesProcedures.Date",
+            HospitalClinicName: "$SurgeriesProcedures.HospitalClinicName",
+            SurgeonName: "$SurgeriesProcedures.SurgeonName",
+            SurgeonNumber: "$SurgeriesProcedures.SurgeonNumber",
+            MedicalSpeciality: { $arrayElemAt: ["$medicalSpeciality", 0] },
+            SurgeryProcedureName: {
+              $arrayElemAt: ["$surgeryProcedureName", 0],
+            },
+            AnaesthesiaType: "$SurgeriesProcedures.AnaesthesiaType",
+            BloodTransfusionNeeded:
+              "$SurgeriesProcedures.BloodTransfusionNeeded",
+            RecoveryCycle: {
+              Value: "$SurgeriesProcedures.RecoveryCycle.Value",
+              Unit: { $arrayElemAt: ["$recoveryCycleUnit", 0] },
+              _id: "$SurgeriesProcedures.RecoveryCycle._id",
+            },
+            PostSurgeryComplications: "$postSurgeryComplications",
+            DischargeSummaryUrlNote:
+              "$SurgeriesProcedures.DischargeSummaryUrlNote",
+            createdAt: "$SurgeriesProcedures.createdAt",
+            updatedAt: "$SurgeriesProcedures.updatedAt",
+          },
+          createdAt: "$SurgeriesProcedures.createdAt",
+          updatedAt: "$SurgeriesProcedures.updatedAt",
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+
+      // Sort by latest first
+      {
+        $sort: {
+          "SurgeryProcedure.createdAt": -1,
+          "SurgeryProcedure.updatedAt": -1,
+        },
+      },
+
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$SurgeriesProcedures" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 
 // Keep all existing main medical history functions unchanged
 exports.saveMedicalHistory = async (req, res) => {
