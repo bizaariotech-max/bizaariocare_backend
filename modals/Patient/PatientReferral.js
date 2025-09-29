@@ -9,6 +9,13 @@ const PatientReferralSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "patient_master",
       index: true,
+      required: true,
+    },
+    CaseFileId: {
+      type: Schema.Types.ObjectId,
+      ref: "patient_case_file",
+      // required: true,
+      index: true,
     },
 
     // 2. REFERRING DOCTOR (logged in Doctor)

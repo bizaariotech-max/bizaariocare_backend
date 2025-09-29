@@ -80,7 +80,32 @@ const patientCaseFileSchema = Joi.object({
     "date.base": "Invalid date format",
   }),
   Notes: Joi.string().trim().allow("", null).optional(),
-  Status: Joi.string().valid("Ongoing", "Past", "Resolved").optional(),
+  // *it is used to update status in medical history schema when creating case file
+  Status: Joi.string()
+    // *it is used to update status in medical history schema when creating case file
+    .valid(
+      "Active",
+      "Ongoing",
+      "In-Treatment",
+      "Monitoring",
+      "Chronic",
+      "Resolved",
+      "Cured",
+      "Past"
+    )
+    .optional(),
+  CreatedBy: Joi.string()
+    .custom((value, helpers) => {
+      // treat empty string or null as allowed (optional)
+      if (value === null || value === "") return value;
+      if (!mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error("any.invalid");
+      }
+      return value; // valid ObjectId string
+    })
+    .messages({ "any.invalid": "Invalid CreatedBy ID format" })
+    .allow(null, "")
+    .optional(),
   IsActive: Joi.boolean().default(true),
   IsDeleted: Joi.boolean().default(false),
 });
@@ -90,7 +115,7 @@ exports.validatePatientCaseFile = async (req, res, next) => {
   try {
     const { error } = patientCaseFileSchema.validate(req.body, {
       abortEarly: false,
-      allowUnknown: false,
+      allowUnknown: true,
     });
 
     if (error) {

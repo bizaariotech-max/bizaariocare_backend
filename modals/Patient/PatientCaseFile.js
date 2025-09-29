@@ -33,16 +33,16 @@ const PatientCaseFile = new Schema(
     HospitalName: { type: String, trim: true },
     Date: { type: Date },
     Notes: { type: String, trim: true },
-    Status: {
-      type: String,
-      enum: ["Ongoing", "Past", "Resolved"],
-      default: "Ongoing",
-    },
-    // CreatedBy: {
-    //   type: Schema.Types.ObjectId,
-    //   ref: "asset_master",
-    //   required: true,
+    // Status: {
+    //   type: String,
+    //   enum: ["Ongoing", "Past", "Resolved"],
+    //   default: "Ongoing",
     // },
+    CreatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "asset_master",
+      // required: true,
+    },
     // UpdatedBy: { type: Schema.Types.ObjectId, ref: "asset_master" },
     IsActive: { type: Boolean, default: true },
     IsDeleted: { type: Boolean, default: false },

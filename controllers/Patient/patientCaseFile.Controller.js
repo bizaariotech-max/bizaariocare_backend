@@ -58,7 +58,10 @@ exports.savePatientCaseFile = async (req, res) => {
           {
             CaseFileId: patientCaseFile._id,
             PatientId: patientCaseFile.PatientId,
-            Status: "Active",
+            // Status: "Active",
+            // Status: caseFileData.Status ? caseFileData.Status : "Active",
+            Status: req.body.Status ? req.body.Status : "Active",
+            // Notes: `Initial entry from case file: ${patientCaseFile.TreatmentType || "N/A"}`,
             // CreatedBy: req.user._id,
             IsActive: true,
             // DoctorHospitalInfo: {

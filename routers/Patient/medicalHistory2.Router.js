@@ -21,7 +21,8 @@ const {
   addClinicalDiagnoses,
   editClinicalDiagnoses,
   listClinicalDiagnoses,
-
+  medicalHistoryList_P,
+  getMedicalHistoryById_P,
   // Therapies
   addTherapy,
   editTherapy,
@@ -43,6 +44,7 @@ const {
   addSurgeriesProcedures,
   editSurgeriesProcedures,
   listSurgeriesProcedures,
+  updateMedicalHistoryStatus,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
@@ -90,6 +92,8 @@ const {
 // MAIN MEDICAL HISTORY ROUTES
 // ===================
 router.post("/save", validateMedicalHistory, saveMedicalHistory);
+// router.get("/list", validateMedicalHistoryList, medicalHistoryList_P);
+// router.get("/medicalHistoryById/:id", getMedicalHistoryById_P);
 router.get("/list", validateMedicalHistoryList, medicalHistoryList);
 router.get("/medicalHistoryById/:id", getMedicalHistoryById);
 router.delete("/:id", deleteMedicalHistory);
@@ -221,7 +225,7 @@ router.delete(
 );
 
 // ===================
-// SURGERIES/PROCEDURES SECTION - ADD THIS SECTION
+// SURGERIES/PROCEDURES SECTION
 // ===================
 // Single operations
 router.post(
@@ -258,5 +262,9 @@ router.get(
 // DELETE SECTION ITEMS
 // ===================
 router.delete("/section/:CaseFileId/:sectionName/:itemId", deleteSectionItem);
+
+// Update Status
+router.put("/status/:id", updateMedicalHistoryStatus);
+
 
 module.exports = router;

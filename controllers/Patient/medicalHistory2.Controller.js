@@ -3928,7 +3928,331 @@ exports.getMedicalHistoryById = async (req, res) => {
   }
 };
 
+//* without aggregation
 
+// Define the complete population configuration
+const medicalHistoryPopulateConfig = [
+  // Case File and Patient
+  {
+    path: 'CaseFileId',
+    select: '_id CaseFileNumber Date TreatmentType'
+  },
+  {
+    path: 'PatientId', 
+    select: '_id Name PatientId PhoneNumber'
+  },
+  
+  // Created/Updated By
+  {
+    path: 'CreatedBy',
+    select: '_id Name Email'
+  },
+  {
+    path: 'UpdatedBy', 
+    select: '_id Name Email'
+  },
+  
+  // Chief Complaints deep population
+  {
+    path: 'ChiefComplaints.Symptoms',
+    select: '_id lookup_value'
+  },
+  {
+    path: 'ChiefComplaints.Duration.Unit',
+    select: '_id lookup_value' 
+  },
+  {
+    path: 'ChiefComplaints.AggravatingFactors',
+    select: '_id lookup_value'
+  },
+  
+  // Clinical Diagnoses deep population
+  {
+    path: 'ClinicalDiagnoses.InvestigationCategory',
+    select: '_id lookup_value'
+  },
+  {
+    path: 'ClinicalDiagnoses.Investigation', 
+    select: '_id lookup_value'
+  },
+  {
+    path: 'ClinicalDiagnoses.Abnormalities',
+    select: '_id lookup_value'
+  },
+  
+  // Medicines Prescribed deep population
+  {
+    path: 'MedicinesPrescribed.Medicines.MedicineName',
+    select: '_id lookup_value'
+  },
+  {
+    path: 'MedicinesPrescribed.Medicines.Dosage',
+    select: '_id lookup_value' 
+  },
+  {
+    path: 'MedicinesPrescribed.RecoveryCycle.Unit',
+    select: '_id lookup_value'
+  },
+  
+  // Therapies deep population  
+  {
+    path: 'Therapies.TherapyName',
+    select: '_id lookup_value'
+  },
+  
+  // Surgeries/Procedures deep population
+  {
+    path: 'SurgeriesProcedures.MedicalSpeciality',
+    select: '_id lookup_value'
+  },
+  {
+    path: 'SurgeriesProcedures.SurgeryProcedureName', 
+    select: '_id lookup_value'
+  },
+  {
+    path: 'SurgeriesProcedures.RecoveryCycle.Unit',
+    select: '_id lookup_value'
+  },
+  {
+    path: 'SurgeriesProcedures.PostSurgeryComplications',
+    select: '_id lookup_value'
+  }
+];
+
+// Combined controller for both list and single record
+exports.getMedicalHistory_P = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      page = 1,
+      limit = 10,
+      CaseFileId,
+      PatientId,
+      Status,
+      FromDate,
+      ToDate,
+      search,
+    } = req.query;
+
+    let query = { IsDeleted: false };
+    let isSingleRecord = false;
+
+    // Check if requesting single record by ID
+    if (id) {
+      query._id = id;
+      isSingleRecord = true;
+    } else {
+      // Build list query filters
+      if (CaseFileId) query.CaseFileId = CaseFileId;
+      if (PatientId) query.PatientId = PatientId; 
+      if (Status) query.Status = Status;
+
+      // Date range filter
+      if (FromDate || ToDate) {
+        query.createdAt = {};
+        if (FromDate) query.createdAt.$gte = new Date(FromDate);
+        if (ToDate) query.createdAt.$lte = new Date(ToDate);
+      }
+
+      // Text search
+      if (search) {
+        const regex = new RegExp(search, "i");
+        query.$or = [{ Notes: regex }, { Status: regex }];
+      }
+    }
+
+    if (isSingleRecord) {
+      // Single record query
+      const medicalHistory = await MedicalHistory.findOne(query)
+        .populate(medicalHistoryPopulateConfig)
+        .lean();
+
+      if (!medicalHistory) {
+        return res.json(__requestResponse("404", "Medical History not found"));
+      }
+
+      return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
+      
+    } else {
+      // List query with pagination
+      const total = await MedicalHistory.countDocuments(query);
+      
+      const medicalHistories = await MedicalHistory.find(query)
+        .populate(medicalHistoryPopulateConfig)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * parseInt(limit))
+        .limit(parseInt(limit))
+        .lean();
+
+      return res.json(
+        __requestResponse("200", __SUCCESS, {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / limit),
+          filters: {
+            CaseFileId,
+            PatientId,
+            Status,
+            FromDate,
+            ToDate,
+            search,
+          },
+          list: medicalHistories,
+        })
+      );
+    }
+    
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Alternative: Separate controllers using shared populate config
+exports.medicalHistoryList_P = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      CaseFileId,
+      PatientId,
+      Status,
+      FromDate,
+      ToDate,
+      search,
+    } = req.query;
+
+    // Build query
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+    if (Status) query.Status = Status;
+
+    // Date range filter
+    if (FromDate || ToDate) {
+      query.createdAt = {};
+      if (FromDate) query.createdAt.$gte = new Date(FromDate);
+      if (ToDate) query.createdAt.$lte = new Date(ToDate);
+    }
+
+    // Text search
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [{ Notes: regex }, { Status: regex }];
+    }
+
+    // Get total count and records
+    const total = await MedicalHistory.countDocuments(query);
+    
+    const medicalHistories = await MedicalHistory.find(query)
+      .populate(medicalHistoryPopulateConfig)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * parseInt(limit))
+      .limit(parseInt(limit))
+      .lean();
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit), 
+        totalPages: Math.ceil(total / limit),
+        filters: {
+          CaseFileId,
+          PatientId,
+          Status,
+          FromDate,
+          ToDate,
+          search,
+        },
+        list: medicalHistories,
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+exports.getMedicalHistoryById_P = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      _id: id,
+      IsDeleted: false,
+    })
+      .populate(medicalHistoryPopulateConfig)
+      .lean();
+
+    if (!medicalHistory) {
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get by Case File ID
+exports.getMedicalHistoryByCaseFileId_P = async (req, res) => {
+  try {
+    const { caseFileId } = req.params;
+
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId: caseFileId,
+      IsDeleted: false,
+    })
+      .populate(medicalHistoryPopulateConfig)
+      .lean();
+
+    if (!medicalHistory) {
+      return res.json(__requestResponse("404", "Medical History not found for this Case File"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get multiple histories by Case File ID
+exports.getMedicalHistoriesByCaseFileId_P = async (req, res) => {
+  try {
+    const { caseFileId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const query = {
+      CaseFileId: caseFileId,
+      IsDeleted: false,
+    };
+
+    const total = await MedicalHistory.countDocuments(query);
+
+    const medicalHistories = await MedicalHistory.find(query)
+      .populate(medicalHistoryPopulateConfig)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * parseInt(limit))
+      .limit(parseInt(limit))
+      .lean();
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+        caseFileId,
+        list: medicalHistories,
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+
+// *end 
 
 exports.deleteMedicalHistory = async (req, res) => {
   const session = await mongoose.startSession();
@@ -4018,6 +4342,78 @@ exports.deleteSectionItem = async (req, res) => {
     session.endSession();
 
     return res.json(__requestResponse("200", "Item deleted successfully"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Status Update 
+exports.updateMedicalHistoryStatus = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const { id } = req.params;
+    const { Status } = req.body;
+
+    // Validate Status
+    const validStatuses = [
+      "Active",
+      "Ongoing",
+      "In-Treatment",
+      "Monitoring",
+      "Chronic",
+      "Resolved",
+      "Cured",
+      "Past",
+    ];
+
+    if (!validStatuses.includes(Status)) {
+      return res.json(__requestResponse("400", "Invalid status value"));
+    }
+
+    // Get old value for audit log
+    const oldValue = await MedicalHistory.findById(id).lean();
+    if (!oldValue) {
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    // Update status
+    const medicalHistory = await MedicalHistory.findByIdAndUpdate(
+      id,
+      {
+        Status,
+        // UpdatedBy: req.user._id,
+      },
+      {
+        new: true,
+        session,
+        runValidators: true,
+      }
+    ).populate([
+      { path: "PatientId", select: "Name PatientId" },
+      { path: "CaseFileId" },
+      { path: "CreatedBy", select: "Name" },
+      { path: "UpdatedBy", select: "Name" },
+    ]);
+
+    // Create audit log
+    await __CreateAuditLog(
+      "medical_history",
+      "UPDATE",
+      // "Status",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
