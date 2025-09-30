@@ -37,11 +37,29 @@ const enumField = (values, required = false) => {
 };
 
 // Helper function for geolocation validation
+// const geolocationSchema = Joi.object({
+//   latitude: Joi.number().min(-90).max(90).optional(),
+//   longitude: Joi.number().min(-180).max(180).optional(),
+//   address: Joi.string().trim().optional().allow(""),
+//   accuracy: Joi.number().optional()
+// });
+
 const geolocationSchema = Joi.object({
-  latitude: Joi.number().min(-90).max(90).optional(),
-  longitude: Joi.number().min(-180).max(180).optional(),
-  address: Joi.string().trim().optional().allow(""),
-  accuracy: Joi.number().optional()
+  type: Joi.string().valid("Point").default("Point").messages({
+    "any.only": 'Geolocation type must be "Point"',
+  }),
+  coordinates: Joi.array()
+    .items(Joi.number().required(), Joi.number().min(-90).max(90).required())
+    .length(2)
+    .messages({
+      "array.length":
+        "Coordinates must contain exactly 2 numbers [longitude, latitude]",
+      "array.items": "Invalid coordinates format",
+      "number.min": "Latitude must be between -90 and 90",
+      "number.max": "Latitude must be between -90 and 90",
+    }),
+}).messages({
+  "object.base": "Geolocation must be an object",
 });
 
 // ==================== MAIN REFERRAL VALIDATIONS ====================

@@ -198,42 +198,42 @@ const PatientReferralSchema = new Schema(
       },
 
       // 6. Geolocation (Current Geolocation)
+      // Geolocation: {
+      //   latitude: {
+      //     type: Number,
+      //     min: -90,
+      //     max: 90,
+      //   },
+      //   longitude: {
+      //     type: Number,
+      //     min: -180,
+      //     max: 180,
+      //   },
+      //   address: {
+      //     type: String,
+      //     trim: true,
+      //   },
+      //   accuracy: {
+      //     type: Number,
+      //   },
+      //   // city: { type: String },
+      //   // state: { type: String },
+      //   // country: { type: String, default: "India" }
+      // },
+
+      //  // GeoJSON for geospatial queries (PRIMARY)
       Geolocation: {
-        latitude: {
-          type: Number,
-          min: -90,
-          max: 90,
-        },
-        longitude: {
-          type: Number,
-          min: -180,
-          max: 180,
-        },
-        address: {
+        type: {
           type: String,
-          trim: true,
+          enum: ["Point"],
+          default: "Point",
         },
-        accuracy: {
-          type: Number,
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: false,
         },
-        // city: { type: String },
-        // state: { type: String },
-        // country: { type: String, default: "India" }
       },
     },
-
-    //  // GeoJSON for geospatial queries (PRIMARY)
-    //  geolocation: {
-    //   type: {
-    //     type: String,
-    //     enum: ["Point"],
-    //     default: "Point"
-    //   },
-    //   coordinates: {
-    //     type: [Number], // [longitude, latitude]
-    //     required: false
-    //   }
-    // },
 
     // REFERRAL TYPE (to determine which conditional fields to show)
     ReferralType: {
