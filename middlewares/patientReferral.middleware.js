@@ -7,6 +7,29 @@ const objectIdField = (required = false) => {
   return required ? schema.required() : schema.optional().allow("", null);
 };
 
+// Reusable ObjectId validator component
+const createObjectIdValidator = (fieldName, isRequired = true) => {
+  let schema = Joi.string().custom((value, helpers) => {
+    if (!value && !isRequired) return value;
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+      return helpers.error("any.invalid");
+    }
+    return value;
+  });
+
+  if (isRequired) {
+    schema = schema.required();
+  } else {
+    schema = schema.allow(null, "");
+  }
+
+  return schema.messages({
+    "any.required": `${fieldName} is required`,
+    "any.invalid": `Invalid ${fieldName} ObjectId format`,
+    "string.empty": `${fieldName} cannot be empty`,
+  });
+};
+
 // Helper function for enum validation
 const enumField = (values, required = false) => {
   let schema = Joi.string().valid(...values);
@@ -26,21 +49,28 @@ const geolocationSchema = Joi.object({
 // Create Patient Referral Validation
 const createPatientReferralSchema = Joi.object({
   PatientId: objectIdField(true).messages({
-    "any.required": "Patient ID is required"
+    "any.required": "Patient ID is required",
+  }),
+  CaseFileId: objectIdField(true).messages({
+    "any.required": "CaseFile ID is required",
   }),
   ReferringDoctor: objectIdField(true).messages({
-    "any.required": "Referring doctor is required"
+    "any.required": "Referring doctor is required",
   }),
   MedicalSpecialty: objectIdField().optional(),
   ReferredCity: objectIdField().optional(),
   ReferredDoctors: Joi.array().items(objectIdField()).optional(),
   ReferralDateTime: Joi.date().optional(),
-  ReferralType: enumField(["GENERAL", "SECOND_OPINION", "MEDICAL_TOURISM"]).optional(),
+  ReferralType: enumField([
+    "GENERAL",
+    "SECOND_OPINION",
+    "MEDICAL_TOURISM",
+  ]).optional(),
   PriorityLevel: enumField(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   AdditionalInformation: Joi.string().trim().optional().allow(""),
   CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required"
-  })
+    "any.required": "Created by is required",
+  }),
 });
 
 // ==================== REASON FOR REFERRAL VALIDATIONS ====================

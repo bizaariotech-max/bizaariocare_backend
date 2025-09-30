@@ -124,7 +124,7 @@ router.delete("/deleteDoctorRemark/:referralId/:remarkId",
   deleteDoctorRemark
 );
 
-// ==================== SECOND OPINION ROUTES ====================
+//*==================== SECOND OPINION ROUTES ====================
 
 // Update Second Opinion Questions
 router.put("/updateSecondOpinionQuestions/:referralId", 
