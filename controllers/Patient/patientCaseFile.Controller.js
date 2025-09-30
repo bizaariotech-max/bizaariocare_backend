@@ -229,6 +229,7 @@ exports.patientCaseFileList = async (req, res) => {
       .populate("PatientId", "Name PatientId")
       .populate("DoctorId", "AssetName")
       .populate("HospitalId", "AssetName")
+      .populate("MedicalSpeciality", "lookup_value")
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ Date: -1 })
