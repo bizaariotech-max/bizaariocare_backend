@@ -278,7 +278,7 @@ const PatientReferralSchema = new Schema(
       },
     },
 
-    // SYSTEM FIELDS
+    //* SYSTEM FIELDS
     CreatedBy: {
       type: Schema.Types.ObjectId,
       ref: "asset_master",

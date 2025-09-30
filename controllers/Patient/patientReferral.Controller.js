@@ -69,6 +69,7 @@ exports.createPatientReferral = async (req, res) => {
   try {
     const {
       PatientId,
+      CaseFileId,
       ReferringDoctor,
       MedicalSpecialty,
       ReferredCity,
@@ -77,11 +78,12 @@ exports.createPatientReferral = async (req, res) => {
       ReferralType,
       PriorityLevel,
       AdditionalInformation,
-      CreatedBy
+      CreatedBy,
     } = req.body;
 
     const newReferral = new PatientReferral({
       PatientId,
+      CaseFileId,
       ReferringDoctor,
       MedicalSpecialty,
       ReferredCity,
@@ -91,16 +93,17 @@ exports.createPatientReferral = async (req, res) => {
       PriorityLevel: PriorityLevel || "MEDIUM",
       AdditionalInformation,
       CreatedBy,
-      UpdatedBy: CreatedBy
+      UpdatedBy: CreatedBy,
     });
 
     const savedReferral = await newReferral.save();
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "CREATE",
-      "REFERRAL_CREATED",
+      // "REFERRAL_CREATED",
+      null,
       null,
       JSON.stringify(savedReferral),
       savedReferral._id,
@@ -108,10 +111,22 @@ exports.createPatientReferral = async (req, res) => {
       null
     );
 
-    return res.status(201).json(__requestResponse("201", "Patient referral created successfully", savedReferral));
+    return res
+      .status(201)
+      .json(
+        __requestResponse(
+          "201",
+          "Patient referral created successfully",
+          savedReferral
+        )
+      );
   } catch (error) {
     console.error("Create patient referral error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -125,7 +140,9 @@ exports.updateReasonForReferral = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.ReasonForReferral);
@@ -141,9 +158,10 @@ exports.updateReasonForReferral = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "REASON_FOR_REFERRAL",
+      // "REASON_FOR_REFERRAL",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.ReasonForReferral),
       referralId,
@@ -151,10 +169,22 @@ exports.updateReasonForReferral = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Reason for referral updated successfully", updatedReferral.ReasonForReferral));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Reason for referral updated successfully",
+          updatedReferral.ReasonForReferral
+        )
+      );
   } catch (error) {
     console.error("Update reason for referral error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -166,10 +196,14 @@ exports.addDoctorRemark = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
-    const oldValue = JSON.stringify(referral.ReasonForReferral?.DoctorRemarks || []);
+    const oldValue = JSON.stringify(
+      referral.ReasonForReferral?.DoctorRemarks || []
+    );
 
     // Add doctor remark
     if (!referral.ReasonForReferral) {
@@ -181,7 +215,7 @@ exports.addDoctorRemark = async (req, res) => {
 
     const newRemark = {
       Remark,
-      CreatedAt: new Date()
+      CreatedAt: new Date(),
     };
 
     referral.ReasonForReferral.DoctorRemarks.push(newRemark);
@@ -191,9 +225,10 @@ exports.addDoctorRemark = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "DOCTOR_REMARK_ADDED",
+      // "DOCTOR_REMARK_ADDED",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.ReasonForReferral.DoctorRemarks),
       referralId,
@@ -201,11 +236,26 @@ exports.addDoctorRemark = async (req, res) => {
       null
     );
 
-    const addedRemark = updatedReferral.ReasonForReferral.DoctorRemarks[updatedReferral.ReasonForReferral.DoctorRemarks.length - 1];
-    return res.status(200).json(__requestResponse("200", "Doctor remark added successfully", addedRemark));
+    const addedRemark =
+      updatedReferral.ReasonForReferral.DoctorRemarks[
+        updatedReferral.ReasonForReferral.DoctorRemarks.length - 1
+      ];
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Doctor remark added successfully",
+          addedRemark
+        )
+      );
   } catch (error) {
     console.error("Add doctor remark error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -217,18 +267,24 @@ exports.updateDoctorRemark = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const remarkIndex = referral.ReasonForReferral?.DoctorRemarks?.findIndex(
-      remark => remark._id.toString() === remarkId
+      (remark) => remark._id.toString() === remarkId
     );
 
     if (remarkIndex === -1) {
-      return res.status(404).json(__requestResponse("404", "Doctor remark not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Doctor remark not found", null));
     }
 
-    const oldValue = JSON.stringify(referral.ReasonForReferral.DoctorRemarks[remarkIndex]);
+    const oldValue = JSON.stringify(
+      referral.ReasonForReferral.DoctorRemarks[remarkIndex]
+    );
 
     // Update doctor remark
     referral.ReasonForReferral.DoctorRemarks[remarkIndex].Remark = Remark;
@@ -238,20 +294,35 @@ exports.updateDoctorRemark = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "DOCTOR_REMARK_UPDATED",
+      // "DOCTOR_REMARK_UPDATED",
+      null,
       oldValue,
-      JSON.stringify(updatedReferral.ReasonForReferral.DoctorRemarks[remarkIndex]),
+      JSON.stringify(
+        updatedReferral.ReasonForReferral.DoctorRemarks[remarkIndex]
+      ),
       referralId,
       UpdatedBy,
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Doctor remark updated successfully", updatedReferral.ReasonForReferral.DoctorRemarks[remarkIndex]));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Doctor remark updated successfully",
+          updatedReferral.ReasonForReferral.DoctorRemarks[remarkIndex]
+        )
+      );
   } catch (error) {
     console.error("Update doctor remark error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -263,18 +334,24 @@ exports.deleteDoctorRemark = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const remarkIndex = referral.ReasonForReferral?.DoctorRemarks?.findIndex(
-      remark => remark._id.toString() === remarkId
+      (remark) => remark._id.toString() === remarkId
     );
 
     if (remarkIndex === -1) {
-      return res.status(404).json(__requestResponse("404", "Doctor remark not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Doctor remark not found", null));
     }
 
-    const oldValue = JSON.stringify(referral.ReasonForReferral.DoctorRemarks[remarkIndex]);
+    const oldValue = JSON.stringify(
+      referral.ReasonForReferral.DoctorRemarks[remarkIndex]
+    );
 
     // Delete doctor remark
     referral.ReasonForReferral.DoctorRemarks.splice(remarkIndex, 1);
@@ -294,10 +371,18 @@ exports.deleteDoctorRemark = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Doctor remark deleted successfully", null));
+    return res
+      .status(200)
+      .json(
+        __requestResponse("200", "Doctor remark deleted successfully", null)
+      );
   } catch (error) {
     console.error("Delete doctor remark error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -311,7 +396,9 @@ exports.updateSecondOpinionQuestions = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.SecondOpinionQuestions);
@@ -327,9 +414,10 @@ exports.updateSecondOpinionQuestions = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "SECOND_OPINION_QUERIES",
+      // "SECOND_OPINION_QUERIES",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.SecondOpinionQuestions),
       referralId,
@@ -337,10 +425,22 @@ exports.updateSecondOpinionQuestions = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Second opinion questions updated successfully", updatedReferral.SecondOpinionQuestions));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Second opinion questions updated successfully",
+          updatedReferral.SecondOpinionQuestions
+        )
+      );
   } catch (error) {
     console.error("Update second opinion questions error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -352,10 +452,14 @@ exports.addSecondOpinionQuestion = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
-    const oldValue = JSON.stringify(referral.SecondOpinionQuestions?.Questions || []);
+    const oldValue = JSON.stringify(
+      referral.SecondOpinionQuestions?.Questions || []
+    );
 
     // Add second opinion question
     if (!referral.SecondOpinionQuestions) {
@@ -367,7 +471,7 @@ exports.addSecondOpinionQuestion = async (req, res) => {
 
     const newQuestion = {
       Question,
-      CreatedAt: new Date()
+      CreatedAt: new Date(),
     };
 
     referral.SecondOpinionQuestions.Questions.push(newQuestion);
@@ -377,9 +481,10 @@ exports.addSecondOpinionQuestion = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "SECOND_OPINION_QUESTION_ADDED",
+      // "SECOND_OPINION_QUESTION_ADDED",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.SecondOpinionQuestions.Questions),
       referralId,
@@ -387,11 +492,26 @@ exports.addSecondOpinionQuestion = async (req, res) => {
       null
     );
 
-    const addedQuestion = updatedReferral.SecondOpinionQuestions.Questions[updatedReferral.SecondOpinionQuestions.Questions.length - 1];
-    return res.status(200).json(__requestResponse("200", "Second opinion question added successfully", addedQuestion));
+    const addedQuestion =
+      updatedReferral.SecondOpinionQuestions.Questions[
+        updatedReferral.SecondOpinionQuestions.Questions.length - 1
+      ];
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Second opinion question added successfully",
+          addedQuestion
+        )
+      );
   } catch (error) {
     console.error("Add second opinion question error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -403,41 +523,65 @@ exports.updateSecondOpinionQuestion = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const questionIndex = referral.SecondOpinionQuestions?.Questions?.findIndex(
-      question => question._id.toString() === questionId
+      (question) => question._id.toString() === questionId
     );
 
     if (questionIndex === -1) {
-      return res.status(404).json(__requestResponse("404", "Second opinion question not found", null));
+      return res
+        .status(404)
+        .json(
+          __requestResponse("404", "Second opinion question not found", null)
+        );
     }
 
-    const oldValue = JSON.stringify(referral.SecondOpinionQuestions.Questions[questionIndex]);
+    const oldValue = JSON.stringify(
+      referral.SecondOpinionQuestions.Questions[questionIndex]
+    );
 
     // Update second opinion question
-    referral.SecondOpinionQuestions.Questions[questionIndex].Question = Question;
+    referral.SecondOpinionQuestions.Questions[questionIndex].Question =
+      Question;
     referral.UpdatedBy = UpdatedBy;
 
     const updatedReferral = await referral.save();
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "SECOND_OPINION_QUESTION_UPDATED",
+      // "SECOND_OPINION_QUESTION_UPDATED",
+      null,
       oldValue,
-      JSON.stringify(updatedReferral.SecondOpinionQuestions.Questions[questionIndex]),
+      JSON.stringify(
+        updatedReferral.SecondOpinionQuestions.Questions[questionIndex]
+      ),
       referralId,
       UpdatedBy,
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Second opinion question updated successfully", updatedReferral.SecondOpinionQuestions.Questions[questionIndex]));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Second opinion question updated successfully",
+          updatedReferral.SecondOpinionQuestions.Questions[questionIndex]
+        )
+      );
   } catch (error) {
     console.error("Update second opinion question error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -449,18 +593,26 @@ exports.deleteSecondOpinionQuestion = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const questionIndex = referral.SecondOpinionQuestions?.Questions?.findIndex(
-      question => question._id.toString() === questionId
+      (question) => question._id.toString() === questionId
     );
 
     if (questionIndex === -1) {
-      return res.status(404).json(__requestResponse("404", "Second opinion question not found", null));
+      return res
+        .status(404)
+        .json(
+          __requestResponse("404", "Second opinion question not found", null)
+        );
     }
 
-    const oldValue = JSON.stringify(referral.SecondOpinionQuestions.Questions[questionIndex]);
+    const oldValue = JSON.stringify(
+      referral.SecondOpinionQuestions.Questions[questionIndex]
+    );
 
     // Delete second opinion question
     referral.SecondOpinionQuestions.Questions.splice(questionIndex, 1);
@@ -480,10 +632,22 @@ exports.deleteSecondOpinionQuestion = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Second opinion question deleted successfully", null));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Second opinion question deleted successfully",
+          null
+        )
+      );
   } catch (error) {
     console.error("Delete second opinion question error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -497,7 +661,9 @@ exports.updateProposedSurgery = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.ProposedSurgery);
@@ -514,9 +680,10 @@ exports.updateProposedSurgery = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "PROPOSED_SURGERY",
+      // "PROPOSED_SURGERY",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.ProposedSurgery),
       referralId,
@@ -524,10 +691,22 @@ exports.updateProposedSurgery = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Proposed surgery updated successfully", updatedReferral.ProposedSurgery));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Proposed surgery updated successfully",
+          updatedReferral.ProposedSurgery
+        )
+      );
   } catch (error) {
     console.error("Update proposed surgery error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -544,12 +723,14 @@ exports.updatePreSurgicalConsiderations = async (req, res) => {
       RiskFactorDefinition,
       PatientConcerns,
       LogisticalConsiderations,
-      UpdatedBy
+      UpdatedBy,
     } = req.body;
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.PreSurgicalConsiderations);
@@ -559,20 +740,24 @@ exports.updatePreSurgicalConsiderations = async (req, res) => {
       referral.PreSurgicalConsiderations = {};
     }
     referral.PreSurgicalConsiderations.Comorbidities = Comorbidities;
-    referral.PreSurgicalConsiderations.ComorbidityDefinition = ComorbidityDefinition;
+    referral.PreSurgicalConsiderations.ComorbidityDefinition =
+      ComorbidityDefinition;
     referral.PreSurgicalConsiderations.RiskFactors = RiskFactors;
-    referral.PreSurgicalConsiderations.RiskFactorDefinition = RiskFactorDefinition;
+    referral.PreSurgicalConsiderations.RiskFactorDefinition =
+      RiskFactorDefinition;
     referral.PreSurgicalConsiderations.PatientConcerns = PatientConcerns;
-    referral.PreSurgicalConsiderations.LogisticalConsiderations = LogisticalConsiderations;
+    referral.PreSurgicalConsiderations.LogisticalConsiderations =
+      LogisticalConsiderations;
     referral.UpdatedBy = UpdatedBy;
 
     const updatedReferral = await referral.save();
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "PRE_SURGICAL_CONSIDERATIONS",
+      // "PRE_SURGICAL_CONSIDERATIONS",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.PreSurgicalConsiderations),
       referralId,
@@ -580,10 +765,22 @@ exports.updatePreSurgicalConsiderations = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Pre-surgical considerations updated successfully", updatedReferral.PreSurgicalConsiderations));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Pre-surgical considerations updated successfully",
+          updatedReferral.PreSurgicalConsiderations
+        )
+      );
   } catch (error) {
     console.error("Update pre-surgical considerations error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -599,12 +796,14 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
       SelectedDoctors,
       SelectionDateTime,
       Geolocation,
-      UpdatedBy
+      UpdatedBy,
     } = req.body;
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.DoctorHospitalSelection);
@@ -614,9 +813,11 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
       referral.DoctorHospitalSelection = {};
     }
     referral.DoctorHospitalSelection.SelectedCity = SelectedCity;
-    referral.DoctorHospitalSelection.SelectedMedicalSpecialty = SelectedMedicalSpecialty;
+    referral.DoctorHospitalSelection.SelectedMedicalSpecialty =
+      SelectedMedicalSpecialty;
     referral.DoctorHospitalSelection.SelectedDoctors = SelectedDoctors;
-    referral.DoctorHospitalSelection.SelectionDateTime = SelectionDateTime || new Date();
+    referral.DoctorHospitalSelection.SelectionDateTime =
+      SelectionDateTime || new Date();
     referral.DoctorHospitalSelection.Geolocation = Geolocation;
     referral.UpdatedBy = UpdatedBy;
 
@@ -624,9 +825,10 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "DOCTOR_HOSPITAL_SELECTION",
+      // "DOCTOR_HOSPITAL_SELECTION",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.DoctorHospitalSelection),
       referralId,
@@ -634,10 +836,22 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Doctor hospital selection updated successfully", updatedReferral.DoctorHospitalSelection));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Doctor hospital selection updated successfully",
+          updatedReferral.DoctorHospitalSelection
+        )
+      );
   } catch (error) {
     console.error("Update doctor hospital selection error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -647,11 +861,14 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
 exports.addReferralResponse = async (req, res) => {
   try {
     const { referralId } = req.params;
-    const { ResponseMessage, AcceptanceStatus, ProposedDateTime, RespondedBy } = req.body;
+    const { ResponseMessage, AcceptanceStatus, ProposedDateTime, RespondedBy } =
+      req.body;
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldValue = JSON.stringify(referral.ReferralResponse);
@@ -662,7 +879,7 @@ exports.addReferralResponse = async (req, res) => {
       ResponseDate: new Date(),
       ResponseMessage,
       AcceptanceStatus,
-      ProposedDateTime
+      ProposedDateTime,
     };
 
     // Update referral status based on acceptance
@@ -678,9 +895,10 @@ exports.addReferralResponse = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "REFERRAL_RESPONSE",
+      // "REFERRAL_RESPONSE",
+      null,
       oldValue,
       JSON.stringify(updatedReferral.ReferralResponse),
       referralId,
@@ -688,10 +906,22 @@ exports.addReferralResponse = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Referral response added successfully", updatedReferral.ReferralResponse));
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Referral response added successfully",
+          updatedReferral.ReferralResponse
+        )
+      );
   } catch (error) {
     console.error("Add referral response error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
@@ -705,7 +935,9 @@ exports.updateReferralStatus = async (req, res) => {
 
     const referral = await PatientReferral.findById(referralId);
     if (!referral || referral.IsDeleted) {
-      return res.status(404).json(__requestResponse("404", "Patient referral not found", null));
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
     }
 
     const oldStatus = referral.ReferralStatus;
@@ -722,9 +954,10 @@ exports.updateReferralStatus = async (req, res) => {
 
     // Create audit log
     await __CreateAuditLog(
-      "PatientReferral",
+      "patient_referral",
       "UPDATE",
-      "STATUS_UPDATE",
+      // "STATUS_UPDATE",
+      null,
       JSON.stringify({ status: oldStatus, priority: oldPriority }),
       JSON.stringify({ status: ReferralStatus, priority: PriorityLevel }),
       referralId,
@@ -732,13 +965,19 @@ exports.updateReferralStatus = async (req, res) => {
       null
     );
 
-    return res.status(200).json(__requestResponse("200", "Referral status updated successfully", {
-      ReferralStatus: updatedReferral.ReferralStatus,
-      PriorityLevel: updatedReferral.PriorityLevel
-    }));
+    return res.status(200).json(
+      __requestResponse("200", "Referral status updated successfully", {
+        ReferralStatus: updatedReferral.ReferralStatus,
+        PriorityLevel: updatedReferral.PriorityLevel,
+      })
+    );
   } catch (error) {
     console.error("Update referral status error:", error);
-    return res.status(500).json(__requestResponse("500", "Internal server error", { error: error.message }));
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
   }
 };
 
