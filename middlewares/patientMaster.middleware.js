@@ -199,9 +199,10 @@ const patientMasterValidationSchema = Joi.object({
   Relationship: objectIdField(false),
 
   // 21. Record Created By (Asset Master)
-  CreatedBy: objectIdField(true).messages({
-    "any.required": "Created by is required",
-  }),
+  // CreatedBy: objectIdField(true).messages({
+  //   "any.required": "Created by is required",
+  // }),
+  CreatedBy: objectIdField(false),
   // BloodGroup: objectIdField(true).messages({
   //   "any.required": "Blood group is required",
   // }),
