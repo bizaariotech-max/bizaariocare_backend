@@ -22,34 +22,42 @@ const PatientMasterSchema = new Schema(
         return `PAT-${dateStr}-${random}`;
       },
     },
-
-    // // 2. PHONE NUMBER WITH ISD CODE (Format: +91838383930)
+    // // 2. PHONE NUMBER (without ISD code)
     // PhoneNumber: {
     //   type: String,
-    //   required: true,
+    //   required: [true, "Phone number is required"],
+    //   unique: true,
     //   trim: true,
     //   validate: {
     //     validator: function (v) {
-    //       // Validate international phone number format
-    //       return /^\+[1-9]\d{1,14}$/.test(v);
+    //       // Validate exactly 10 digits
+    //       return /^[0-9]{10}$/.test(v);
     //     },
-    //     message:
-    //       "Phone number must be in international format (e.g., +91838383930)",
+    //     message: (props) =>
+    //       `${props.value} is not a valid 10-digit phone number`,
     //   },
+    //   // validate: {
+    //   //   validator: function (v) {
+    //   //     // Validate phone number format (only digits)
+    //   //     return /^[0-9]{5,15}$/.test(v);
+    //   //   },
+    //   //   message: "Phone number must contain only digits (5-15 digits)",
+    //   // },
     // },
 
-    // 2. PHONE NUMBER (without ISD code)
     PhoneNumber: {
       type: String,
-      required: true,
+      required: [true, "Phone number is required"],
       trim: true,
-      validate: {
-        validator: function (v) {
-          // Validate phone number format (only digits)
-          return /^[0-9]{5,15}$/.test(v);
+      validate: [
+        {
+          validator: function (v) {
+            return /^[0-9]{10}$/.test(v);
+          },
+          message: (props) =>
+            `${props.value} is not a valid 10-digit phone number`,
         },
-        message: "Phone number must contain only digits (5-15 digits)",
-      },
+      ],
     },
 
     ISDCode: {
@@ -255,7 +263,7 @@ const PatientMasterSchema = new Schema(
 
 // INDEXES FOR PERFORMANCE
 PatientMasterSchema.index({ PatientId: 1 }, { unique: true });
-PatientMasterSchema.index({ PhoneNumber: 1 });
+// PatientMasterSchema.index({ PhoneNumber: 1 });
 PatientMasterSchema.index({ Name: 1 });
 PatientMasterSchema.index({ EmailAddress: 1 });
 PatientMasterSchema.index({ IsActive: 1, IsDeleted: 1 });
@@ -266,6 +274,53 @@ PatientMasterSchema.index({ State: 1 });
 PatientMasterSchema.index({ IsVerified: 1 });
 PatientMasterSchema.index({ City: 1 });
 PatientMasterSchema.index({ InsuranceProvider: 1 });
+
+// *Phone no. duplicacy
+
+// Update the compound unique index for PhoneNumber
+PatientMasterSchema.index(
+  { 
+    PhoneNumber: 1,
+    IsDeleted: 1 
+  },
+  {
+    unique: true,
+    partialFilterExpression: { IsDeleted: false },
+    collation: { locale: "en", strength: 2 }
+  }
+);
+
+// Update the error handler for duplicate phone numbers
+PatientMasterSchema.post(['save', 'updateOne', 'findOneAndUpdate'], function(error, doc, next) {
+  if (error.code === 11000) {
+    if (error.keyPattern.PhoneNumber) {
+      next(new Error('Phone number already exists for another active patient'));
+    } else {
+      next(new Error('Duplicate key error'));
+    }
+  } else {
+    next(error);
+  }
+});
+
+// Add pre-validate middleware to ensure phone number format
+PatientMasterSchema.pre('validate', async function(next) {
+  if (this.isModified('PhoneNumber')) {
+    // Check if phone number exists for another active patient
+    const existingPatient = await this.constructor.findOne({
+      PhoneNumber: this.PhoneNumber,
+      IsDeleted: false,
+      _id: { $ne: this._id }
+    });
+
+    if (existingPatient) {
+      next(new Error('Phone number already exists for another active patient'));
+    }
+  }
+  next();
+});
+
+// *end Phone
 
 // PRE-SAVE MIDDLEWARE
 PatientMasterSchema.pre("save", function (next) {
