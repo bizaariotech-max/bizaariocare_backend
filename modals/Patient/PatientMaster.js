@@ -51,7 +51,7 @@ const PatientMasterSchema = new Schema(
         message: "Phone number must contain only digits (5-15 digits)",
       },
     },
-    
+
     ISDCode: {
       type: Schema.Types.ObjectId,
       ref: "admin_lookups",
@@ -216,9 +216,11 @@ const PatientMasterSchema = new Schema(
       ref: "asset_master",
       required: true,
     },
+    // 22. BLOOD GROUP (A+, A-, B+, B-, AB+, AB-, O+, O-)
     BloodGroup: {
-      type: Schema.Types.ObjectId,
-      ref: "admin_lookups",
+      type: String,
+      trim: true,
+      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
     },
 
     // new field

@@ -202,9 +202,18 @@ const patientMasterValidationSchema = Joi.object({
   CreatedBy: objectIdField(true).messages({
     "any.required": "Created by is required",
   }),
-  BloodGroup: objectIdField(true).messages({
-    "any.required": "Blood group is required",
-  }),
+  // BloodGroup: objectIdField(true).messages({
+  //   "any.required": "Blood group is required",
+  // }),
+
+  BloodGroup: Joi.string()
+    .valid("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+    .required()
+    .messages({
+      "any.only": "Blood group must be one of A+, A-, B+, B-, AB+, AB-, O+, O-",
+      "any.required": "Blood group is required",
+    }),
+
   // System Fields
   IsActive: Joi.boolean().optional().default(true),
   IsDeleted: Joi.boolean().optional().default(false),
