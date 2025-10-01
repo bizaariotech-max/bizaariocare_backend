@@ -13,6 +13,7 @@ const {
   getPatientsByVerificationStatus,
   updateVerificationStatus,
   getPatientByPhoneNumber,
+  getPatientDetailsByQRScan,
 } = require("../../controllers/Patient/patientMaster.Controller");
 
 const {
@@ -57,5 +58,10 @@ router.put("/updateVerificationStatus/:id", updateVerificationStatus);
 
 //getPatientByPhoneNumber
 router.get("/getPatientbyphonenumber/:PhoneNumber", getPatientByPhoneNumber);
+
+// QR
+//  NO AUTHENTICATION REQUIRED (Public)
+// router.get("/patient-details/:id", getPatientDetailsByQRScan); // will implement later
+
 
 module.exports = router;

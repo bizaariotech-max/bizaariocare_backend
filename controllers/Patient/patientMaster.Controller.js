@@ -123,6 +123,51 @@ exports.test = async (req, res) => {
 //   }
 // };
 
+// Public endpoint to view patient details via QR scan
+exports.getPatientDetailsByQRScan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const patient = await PatientMaster.findById(id)
+      .populate("Nationality", "StationName")
+      .populate("CountryOfResidence", "StationName")
+      .populate("State", "StationName")
+      .populate("City", "StationName")
+      .populate("InsuranceProvider", "lookup_value")
+      .populate("Relationship", "lookup_value")
+      .select("-CreatedBy -UpdatedBy -__v") // Hide internal fields
+      .lean();
+
+    if (!patient || patient.IsDeleted) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Return only public information (hide sensitive data if needed)
+    const publicPatientData = {
+      _id: patient._id,
+      Name: patient.Name,
+      PatientId: patient.PatientId,
+      Age: patient.Age,
+      Gender: patient.Gender,
+      DateOfBirth: patient.DateOfBirth,
+      PhoneNumber: patient.PhoneNumber,
+      EmailAddress: patient.EmailAddress,
+      ProfilePic: patient.ProfilePic,
+      QRCode: patient.QRCode,
+      Nationality: patient.Nationality,
+      City: patient.City,
+      State: patient.State,
+      // Add other non-sensitive fields you want to display
+    };
+
+    return res.json(__requestResponse("200", __SUCCESS, publicPatientData));
+  } catch (error) {
+    console.error("Get Patient by QR Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+
 // Save Patient (Add/Edit in single API) - WITH QR CODE GENERATION & DB SAVE
 exports.SavePatient = async (req, res) => {
   try {
