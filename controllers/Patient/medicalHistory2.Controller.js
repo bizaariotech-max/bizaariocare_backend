@@ -2250,7 +2250,7 @@ exports.addSurgeryProcedure = async (req, res) => {
 };
 
 // Add multiple surgeries/procedures
-exports.addSurgeriesProcedures = async (req, res) => {
+exports.addSurgeriesProceduresxx = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -2291,6 +2291,100 @@ exports.addSurgeriesProcedures = async (req, res) => {
     return res.json(__requestResponse("200", __SUCCESS, populated));
   } catch (error) {
     await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Add multiple surgeries/procedures
+exports.addSurgeriesProcedures = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, SurgeriesProcedures, CreatedBy } = req.body;
+
+    // Validate request body
+    if (
+      !CaseFileId ||
+      !SurgeriesProcedures ||
+      !Array.isArray(SurgeriesProcedures)
+    ) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("400", "Invalid request data"));
+    }
+
+    // Get or create medical history with error handling
+    let medicalHistory;
+    try {
+      medicalHistory = await getOrCreateMedicalHistory(
+        CaseFileId,
+        req.caseFile.PatientId,
+        CreatedBy,
+        session
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(
+        __requestResponse("500", "Error creating medical history")
+      );
+    }
+
+    // Store old value before modifications
+    const oldValue = medicalHistory.toObject();
+
+    // Add new surgeries/procedures
+    try {
+      SurgeriesProcedures.forEach((surgeryProcedure) => {
+        medicalHistory.SurgeriesProcedures.push(surgeryProcedure);
+      });
+
+      medicalHistory.UpdatedBy = CreatedBy;
+      await medicalHistory.save({ session });
+
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "ADD_SURGERIES_PROCEDURES",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id
+      );
+
+      // Commit transaction before further operations
+      await session.commitTransaction();
+      session.endSession();
+
+      // Populate after transaction is committed
+      const populated = await MedicalHistory.findById(medicalHistory._id)
+        .populate("SurgeriesProcedures.MedicalSpeciality", "lookup_value")
+        .populate("SurgeriesProcedures.SurgeryProcedureName", "lookup_value")
+        .populate("SurgeriesProcedures.RecoveryCycle.Unit", "lookup_value")
+        .populate(
+          "SurgeriesProcedures.PostSurgeryComplications",
+          "lookup_value"
+        )
+        .populate("CaseFileId", "CaseFileNumber Date")
+        .populate("PatientId", "Name PatientId");
+
+      return res.json(__requestResponse("200", __SUCCESS, populated));
+    } catch (error) {
+      // Only abort if transaction hasn't been committed
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      session.endSession();
+      return res.json(
+        __requestResponse("500", "Error saving surgeries/procedures")
+      );
+    }
+  } catch (error) {
+    // Only abort if transaction hasn't been committed
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     session.endSession();
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
@@ -2358,6 +2452,130 @@ exports.editSurgeryProcedure = async (req, res) => {
   }
 };
 
+// Edit single surgery/procedure
+exports.editSurgeryProcedure_new = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { _id, CaseFileId, SurgeryProcedure, UpdatedBy } = req.body;
+
+    // Validate required fields
+    if (!_id || !CaseFileId || !SurgeryProcedure || !UpdatedBy) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("400", "Missing required fields"));
+    }
+
+    // Find medical history with session and proper error handling
+    let medicalHistory;
+    try {
+      medicalHistory = await MedicalHistory.findOne({
+        CaseFileId,
+        IsDeleted: false,
+      }).session(session);
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("500", "Database query error"));
+    }
+
+    if (!medicalHistory) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Medical History not found"));
+    }
+
+    // Store old value before modifications
+    const oldValue = medicalHistory.toObject();
+
+    // Find surgery index with validation
+    const surgeryIndex = medicalHistory.SurgeriesProcedures.findIndex(
+      (surgery) => surgery._id.toString() === _id.toString()
+    );
+
+    if (surgeryIndex === -1) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("404", "Surgery/Procedure not found"));
+    }
+
+    try {
+      // Update surgery data with spread operator and preserve _id
+      medicalHistory.SurgeriesProcedures[surgeryIndex] = {
+        ...medicalHistory.SurgeriesProcedures[surgeryIndex].toObject(),
+        ...SurgeryProcedure,
+        _id: _id, // Preserve original _id
+        updatedAt: new Date(), // Add updated timestamp
+      };
+
+      medicalHistory.UpdatedBy = UpdatedBy;
+      await medicalHistory.save({ session });
+
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "EDIT_SURGERY_PROCEDURE",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id
+      );
+
+      // Commit transaction before further operations
+      await session.commitTransaction();
+      session.endSession();
+
+      // Populate after transaction is committed
+      const populated = await MedicalHistory.findById(
+        medicalHistory._id
+      ).populate([
+        {
+          path: "SurgeriesProcedures.MedicalSpeciality",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.SurgeryProcedureName",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.RecoveryCycle.Unit",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.PostSurgeryComplications",
+          select: "lookup_value",
+        },
+        {
+          path: "CaseFileId",
+          select: "CaseFileNumber Date",
+        },
+        {
+          path: "PatientId",
+          select: "Name PatientId",
+        },
+      ]);
+
+      return res.json(__requestResponse("200", __SUCCESS, populated));
+    } catch (error) {
+      // Only abort if transaction hasn't been committed
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      session.endSession();
+      return res.json(
+        __requestResponse("500", "Error updating surgery/procedure")
+      );
+    }
+  } catch (error) {
+    // Only abort if transaction hasn't been committed
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 // Edit multiple surgeries/procedures (replace all)
 exports.editSurgeriesProcedures = async (req, res) => {
   const session = await mongoose.startSession();
@@ -2401,6 +2619,128 @@ exports.editSurgeriesProcedures = async (req, res) => {
     return res.json(__requestResponse("200", __SUCCESS, populated));
   } catch (error) {
     await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit multiple surgeries/procedures (replace all)
+exports.editSurgeriesProcedures_New = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, SurgeriesProcedures, UpdatedBy } = req.body;
+
+    // Input validation
+    if (!CaseFileId || !Array.isArray(SurgeriesProcedures) || !UpdatedBy) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("400", "Invalid request data"));
+    }
+
+    // Find medical history with session
+    let medicalHistory;
+    try {
+      medicalHistory = await MedicalHistory.findOne({
+        CaseFileId,
+        IsDeleted: false,
+      }).session(session);
+
+      if (!medicalHistory) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.json(__requestResponse("404", "Medical History not found"));
+      }
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.json(__requestResponse("500", "Database query error"));
+    }
+
+    try {
+      // Store old value before modifications
+      const oldValue = medicalHistory.toObject();
+
+      // Update surgeries with timestamps
+      const updatedSurgeries = SurgeriesProcedures.map((surgery) => ({
+        ...surgery,
+        updatedAt: new Date(),
+        _id: surgery._id || new mongoose.Types.ObjectId(), // Preserve existing IDs or create new ones
+      }));
+
+      // Update medical history
+      medicalHistory.SurgeriesProcedures = updatedSurgeries;
+      medicalHistory.UpdatedBy = UpdatedBy;
+      medicalHistory.updatedAt = new Date();
+
+      // Save changes
+      await medicalHistory.save({ session });
+
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "EDIT_SURGERIES_PROCEDURES",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id
+      );
+
+      // Commit transaction before population
+      await session.commitTransaction();
+      session.endSession();
+
+      // Populate after transaction is committed
+      const populated = await MedicalHistory.findById(
+        medicalHistory._id
+      ).populate([
+        {
+          path: "SurgeriesProcedures.MedicalSpeciality",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.SurgeryProcedureName",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.RecoveryCycle.Unit",
+          select: "lookup_value",
+        },
+        {
+          path: "SurgeriesProcedures.PostSurgeryComplications",
+          select: "lookup_value",
+        },
+        {
+          path: "CaseFileId",
+          select: "CaseFileNumber Date",
+        },
+        {
+          path: "PatientId",
+          select: "Name PatientId",
+        },
+      ]);
+
+      return res.json(
+        __requestResponse("200", __SUCCESS, {
+          message: "Surgeries/Procedures updated successfully",
+          data: populated,
+        })
+      );
+    } catch (error) {
+      // Only abort if transaction hasn't been committed
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      session.endSession();
+      return res.json(
+        __requestResponse("500", "Error updating surgeries/procedures")
+      );
+    }
+  } catch (error) {
+    // Only abort if transaction hasn't been committed
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     session.endSession();
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
