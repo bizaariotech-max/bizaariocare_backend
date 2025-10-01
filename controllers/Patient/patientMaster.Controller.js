@@ -217,8 +217,8 @@ exports.getPatientById = async (req, res) => {
       .populate("Nationality", "StationName")
       .populate("CountryOfResidence", "StationName")
       .populate("State", "StationName")
-      .populate("InsuranceProvider", "LookupValue")
-      .populate("Relationship", "LookupValue")
+      .populate("InsuranceProvider", "lookup_value")
+      .populate("Relationship", "lookup_value")
       .populate("CreatedBy", "AssetName")
       .populate("UpdatedBy", "AssetName")
       .lean();
