@@ -229,6 +229,9 @@ const PatientMasterSchema = new Schema(
       default: "",
     },
 
+    QRCode: {
+      type: String,
+    },
     // SYSTEM FIELDS
     IsActive: {
       type: Boolean,

@@ -7,50 +7,100 @@ const {
 const { __deepClone } = require("../../utils/constant");
 const { __CreateAuditLog } = require("../../utils/auditlog");
 const mongoose = require("mongoose"); // Add this import
+const QRCode = require("qrcode");
+const Jimp = require("jimp");
+const path = require("path");
+const cloudinary = require("cloudinary").v2;
 
 // Test Route
 exports.test = async (req, res) => {
   return res.json(__requestResponse("200", "Patient Master API Working"));
 };
 
-// Save Patient (Add/Edit in single API)
+// Helper function to generate and upload QR code
+const generateAndUploadQRCode = async (patientId) => {
+  try {
+    // Generate QR code buffer
+    const qrBuffer = await QRCode.toBuffer(patientId, {
+      errorCorrectionLevel: "H",
+      type: "png",
+      width: 400,
+      margin: 1,
+      color: {
+        dark: "#ffffffff",
+        light: "#d60d2f",
+      },
+    });
+
+    const baseImagePath = path.resolve("./uploads/qrbg.jpeg");
+    const outputPath = path.resolve(`./uploads/qr_${patientId}.png`);
+
+    // Load base image & QR image
+    const baseImage = await Jimp.read(baseImagePath);
+    const qrImage = await Jimp.read(qrBuffer);
+
+    // Resize QR code to fit
+    qrImage.resize(490, 490);
+
+    // Composite QR code on base image
+    baseImage.composite(qrImage, 320, 555);
+
+    // Save output temporarily
+    await baseImage.writeAsync(outputPath);
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(outputPath, {
+      folder: "qr",
+      resource_type: "auto",
+    });
+
+    // Delete local file after upload
+    __deleteFile(outputPath);
+
+    console.log("✅ QR code generated and uploaded:", result.secure_url);
+
+    return result.secure_url;
+  } catch (error) {
+    console.error("QR Generation Error:", error.message);
+    throw error;
+  }
+};
+
+// Save Patient (Add/Edit in single API) - WITH QR CODE GENERATION
 exports.SavePatient = async (req, res) => {
   try {
     const { _id } = req.body;
     let patient;
     let oldValue = null;
-    
+    let isNewPatient = false;
+
     // Remove _id from patientData to avoid MongoDB issues
     const patientData = { ...req.body };
     delete patientData._id;
-    
+
     // Check if _id exists and is not null/empty - if true, update; otherwise, create new
     if (_id && _id !== null && _id !== "") {
       // Get old value for audit log
       oldValue = await PatientMaster.findById(_id).lean();
-      
+
       if (!oldValue) {
         return res.json(__requestResponse("404", "Patient not found"));
       }
-      
-      // Update existing patient
-      patient = await PatientMaster.findByIdAndUpdate(
-        _id, 
-        patientData, 
-        {
-          new: true,
-          runValidators: true
-        }
-      )
-      .populate("Nationality", "StationName")
-      .populate("CountryOfResidence", "StationName")
-      .populate("State", "StationName")
-      .populate("City", "StationName")
-      .populate("InsuranceProvider", "LookupValue")
-      .populate("Relationship", "LookupValue")
-      .populate("CreatedBy", "AssetName")
-      .populate("UpdatedBy", "AssetName");
-      
+
+      // Update existing patient (QR code remains unchanged)
+      patient = await PatientMaster.findByIdAndUpdate(_id, patientData, {
+        new: true,
+        runValidators: true,
+      })
+        .populate("Nationality", "StationName")
+        .populate("CountryOfResidence", "StationName")
+        .populate("State", "StationName")
+        .populate("City", "StationName")
+        .populate("InsuranceProvider", "LookupValue")
+        .populate("Relationship", "LookupValue")
+        .populate("CreatedBy", "AssetName")
+        .populate("UpdatedBy", "AssetName");
+
       // Create audit log for update
       await __CreateAuditLog(
         "patient_master",
@@ -58,12 +108,34 @@ exports.SavePatient = async (req, res) => {
         null,
         oldValue,
         patient.toObject(),
-        patient._id,
+        patient._id
       );
     } else {
-      // Create new patient
+      // Create new patient (without QR code first)
+      isNewPatient = true;
       patient = await PatientMaster.create(patientData);
-      
+
+      // GENERATE QR CODE FOR NEW PATIENT
+      try {
+        const qrCodeUrl = await generateAndUploadQRCode(patient._id.toString());
+
+        // Update patient with QR code URL
+        patient = await PatientMaster.findByIdAndUpdate(
+          patient._id,
+          { QRCode: qrCodeUrl },
+          { new: true }
+        );
+
+        console.log("✅ Patient created with QR code:", patient._id);
+      } catch (qrError) {
+        console.error(
+          "⚠️ QR code generation failed, but patient created:",
+          qrError.message
+        );
+        // Patient still created, just without QR code
+      }
+
+      // Fetch with populated fields
       patient = await PatientMaster.findById(patient._id)
         .populate("Nationality", "StationName")
         .populate("CountryOfResidence", "StationName")
@@ -73,7 +145,7 @@ exports.SavePatient = async (req, res) => {
         .populate("Relationship", "LookupValue")
         .populate("CreatedBy", "AssetName")
         .populate("UpdatedBy", "AssetName");
-      
+
       // Create audit log for creation
       await __CreateAuditLog(
         "patient_master",
@@ -81,7 +153,111 @@ exports.SavePatient = async (req, res) => {
         null,
         null,
         patient.toObject(),
-        patient._id,
+        patient._id
+      );
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient));
+  } catch (error) {
+    console.error("Save Patient Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Optional: Separate endpoint to regenerate QR code if needed
+exports.regeneratePatientQRCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const patient = await PatientMaster.findById(id);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Generate new QR code
+    const qrCodeUrl = await generateAndUploadQRCode(patient._id.toString());
+
+    // Update patient with new QR code
+    patient.QRCode = qrCodeUrl;
+    await patient.save();
+
+    return res.json(
+      __requestResponse("200", "QR code regenerated successfully", {
+        _id: patient._id,
+        QRCode: qrCodeUrl,
+      })
+    );
+  } catch (error) {
+    console.error("Regenerate QR Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Save Patient (Add/Edit in single API)
+exports.SavePatientxx = async (req, res) => {
+  try {
+    const { _id } = req.body;
+    let patient;
+    let oldValue = null;
+
+    // Remove _id from patientData to avoid MongoDB issues
+    const patientData = { ...req.body };
+    delete patientData._id;
+
+    // Check if _id exists and is not null/empty - if true, update; otherwise, create new
+    if (_id && _id !== null && _id !== "") {
+      // Get old value for audit log
+      oldValue = await PatientMaster.findById(_id).lean();
+
+      if (!oldValue) {
+        return res.json(__requestResponse("404", "Patient not found"));
+      }
+
+      // Update existing patient
+      patient = await PatientMaster.findByIdAndUpdate(_id, patientData, {
+        new: true,
+        runValidators: true,
+      })
+        .populate("Nationality", "StationName")
+        .populate("CountryOfResidence", "StationName")
+        .populate("State", "StationName")
+        .populate("City", "StationName")
+        .populate("InsuranceProvider", "LookupValue")
+        .populate("Relationship", "LookupValue")
+        .populate("CreatedBy", "AssetName")
+        .populate("UpdatedBy", "AssetName");
+
+      // Create audit log for update
+      await __CreateAuditLog(
+        "patient_master",
+        "UPDATE",
+        null,
+        oldValue,
+        patient.toObject(),
+        patient._id
+      );
+    } else {
+      // Create new patient
+      patient = await PatientMaster.create(patientData);
+
+      patient = await PatientMaster.findById(patient._id)
+        .populate("Nationality", "StationName")
+        .populate("CountryOfResidence", "StationName")
+        .populate("State", "StationName")
+        .populate("City", "StationName")
+        .populate("InsuranceProvider", "LookupValue")
+        .populate("Relationship", "LookupValue")
+        .populate("CreatedBy", "AssetName")
+        .populate("UpdatedBy", "AssetName");
+
+      // Create audit log for creation
+      await __CreateAuditLog(
+        "patient_master",
+        "CREATE",
+        null,
+        null,
+        patient.toObject(),
+        patient._id
       );
     }
 

@@ -111,7 +111,70 @@ const AddImageOrDoc = async (req, res) => {
   }
 };
 
+
+const QRCode = require("qrcode");
+const Jimp = require("jimp");
+
+const GenrateQrCode = async (req, res) => {
+  try {
+    // http://localhost:8012/api/v1/common/GenrateQrCode/68a83ee3544ccaa184bc2d18
+    const { id } = req.params;
+    const qrBuffer = await QRCode.toBuffer(id, {
+      errorCorrectionLevel: "H",
+      type: "png",
+      width: 400,
+      margin: 1,
+      color: {
+        dark: "#ffffffff", // QR code color
+        light: "#d60d2f", // transparent background
+      },
+    });
+    const baseImagePath = path.resolve("./uploads/qrbg.jpeg");
+    const outputPath = "uploads/qr_" + id + ".png";
+
+    // 2. Load base image & QR image
+    const baseImage = await Jimp.read(baseImagePath);
+    const qrImage = await Jimp.read(qrBuffer);
+
+    // 3. Resize QR code to fit (adjust size as per template)
+    qrImage.resize(490, 490); // set size as needed
+
+    // 4. Composite QR code on top of base image
+    // Example coordinates → (x, y) adjust until it aligns
+    baseImage.composite(qrImage, 320, 555);
+
+    // 5. Save output
+    await baseImage.writeAsync(outputPath);
+
+    console.log("✅ QR code generated and placed successfully:", outputPath);
+    const __ImagePathDetails = await AdminEnvSetting.findOne({
+      EnvSettingCode: "IMAGE_PATH",
+    });
+    const filePath = path.resolve("./" + outputPath);
+
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "qr",
+      resource_type: "auto",
+    });
+    __deleteFile(filePath);
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        public_id: result.public_id,
+        full_URL: result.secure_url,
+        base_URL:
+          process.env.NODE_ENV === "development"
+            ? process.env.LOCAL_IMAGE_URL
+            : __ImagePathDetails?.EnvSettingTextValue,
+      })
+    );
+  } catch (error) {
+    console.error("Upload Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR));
+  }
+};
+
 module.exports = {
   AddImage,
   AddImageOrDoc,
+  GenrateQrCode,
 };
