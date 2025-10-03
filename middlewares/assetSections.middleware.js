@@ -83,10 +83,10 @@ const assetProfileSchema = Joi.object({
   ProfilePDF: Joi.string().optional().allow("", null),
   VideoBio: Joi.string().optional().allow("", null),
   Fellowships: Joi.array().items(Joi.string()).optional(),
-  NoofSurgeriesPerformed: Joi.array().items(Joi.string()).optional(),
-  NoofSatisfiedPatients: Joi.array().items(Joi.string()).optional(),
-  NoofArticlesPublished: Joi.array().items(Joi.string()).optional(),
-  NoofLecturesDelivered: Joi.array().items(Joi.string()).optional(),
+  NoofSurgeriesPerformed: Joi.string().optional().allow("", null),
+  NoofSatisfiedPatients: Joi.string().optional().allow("", null),
+  NoofArticlesPublished: Joi.string().optional().allow("", null),
+  NoofLecturesDelivered: Joi.string().optional().allow("", null),
 });
 
 // Section 8: Medical Specialties Validation

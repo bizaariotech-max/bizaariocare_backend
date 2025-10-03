@@ -6,6 +6,7 @@ const {
   __NO_LOOKUP_LIST,
 } = require("../../utils/variable");
 const { __deepClone } = require("../../utils/constant");
+const { __CreateAuditLog } = require("../../utils/auditlog");
 
 // -------------------------
 // Section 3: Incorporation Details
@@ -27,11 +28,16 @@ exports.updateIncorporationDetails = async (req, res) => {
     }
 
     const updateData = {};
-    if (RegistrationBody !== undefined) updateData.RegistrationBody = RegistrationBody;
-    if (RegistrationCertificate !== undefined) updateData.RegistrationCertificate = RegistrationCertificate;
-    if (RegistrationYear !== undefined) updateData.RegistrationYear = RegistrationYear;
-    if (RegistrationNumber !== undefined) updateData.RegistrationNumber = RegistrationNumber;
-    if (ValidityExpiry !== undefined) updateData.ValidityExpiry = ValidityExpiry;
+    if (RegistrationBody !== undefined)
+      updateData.RegistrationBody = RegistrationBody;
+    if (RegistrationCertificate !== undefined)
+      updateData.RegistrationCertificate = RegistrationCertificate;
+    if (RegistrationYear !== undefined)
+      updateData.RegistrationYear = RegistrationYear;
+    if (RegistrationNumber !== undefined)
+      updateData.RegistrationNumber = RegistrationNumber;
+    if (ValidityExpiry !== undefined)
+      updateData.ValidityExpiry = ValidityExpiry;
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
@@ -101,15 +107,23 @@ exports.updateVerificationDetails = async (req, res) => {
     }
 
     const updateData = {};
-    if (IncorporationCredentialCheck !== undefined) updateData.IncorporationCredentialCheck = IncorporationCredentialCheck;
-    if (EmploymentCheck !== undefined) updateData.EmploymentCheck = EmploymentCheck;
-    if (EducationalCredentialCheck !== undefined) updateData.EducationalCredentialCheck = EducationalCredentialCheck;
-    if (CriminalRecordCheck !== undefined) updateData.CriminalRecordCheck = CriminalRecordCheck;
-    if (PatientTestimonyCheck !== undefined) updateData.PatientTestimonyCheck = PatientTestimonyCheck;
-    if (OnlineReputationCheck !== undefined) updateData.OnlineReputationCheck = OnlineReputationCheck;
+    if (IncorporationCredentialCheck !== undefined)
+      updateData.IncorporationCredentialCheck = IncorporationCredentialCheck;
+    if (EmploymentCheck !== undefined)
+      updateData.EmploymentCheck = EmploymentCheck;
+    if (EducationalCredentialCheck !== undefined)
+      updateData.EducationalCredentialCheck = EducationalCredentialCheck;
+    if (CriminalRecordCheck !== undefined)
+      updateData.CriminalRecordCheck = CriminalRecordCheck;
+    if (PatientTestimonyCheck !== undefined)
+      updateData.PatientTestimonyCheck = PatientTestimonyCheck;
+    if (OnlineReputationCheck !== undefined)
+      updateData.OnlineReputationCheck = OnlineReputationCheck;
     if (VerifiedBy !== undefined) updateData.VerifiedBy = VerifiedBy;
-    if (VerificationDate !== undefined) updateData.VerificationDate = VerificationDate;
-    if (VerificationCertificate !== undefined) updateData.VerificationCertificate = VerificationCertificate;
+    if (VerificationDate !== undefined)
+      updateData.VerificationDate = VerificationDate;
+    if (VerificationCertificate !== undefined)
+      updateData.VerificationCertificate = VerificationCertificate;
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
@@ -121,7 +135,8 @@ exports.updateVerificationDetails = async (req, res) => {
       __requestResponse("200", __SUCCESS, {
         message: "Verification details updated successfully",
         data: {
-          IncorporationCredentialCheck: updatedAsset.IncorporationCredentialCheck,
+          IncorporationCredentialCheck:
+            updatedAsset.IncorporationCredentialCheck,
           EmploymentCheck: updatedAsset.EmploymentCheck,
           EducationalCredentialCheck: updatedAsset.EducationalCredentialCheck,
           CriminalRecordCheck: updatedAsset.CriminalRecordCheck,
@@ -180,12 +195,17 @@ exports.updateHospitalSize = async (req, res) => {
     }
 
     const updateData = {};
-    if (NumberOfDepartments !== undefined) updateData.NumberOfDepartments = NumberOfDepartments;
-    if (NumberOfDoctors !== undefined) updateData.NumberOfDoctors = NumberOfDoctors;
-    if (NumberOfConsultingPhysicians !== undefined) updateData.NumberOfConsultingPhysicians = NumberOfConsultingPhysicians;
-    if (NumberOfNursingStaff !== undefined) updateData.NumberOfNursingStaff = NumberOfNursingStaff;
+    if (NumberOfDepartments !== undefined)
+      updateData.NumberOfDepartments = NumberOfDepartments;
+    if (NumberOfDoctors !== undefined)
+      updateData.NumberOfDoctors = NumberOfDoctors;
+    if (NumberOfConsultingPhysicians !== undefined)
+      updateData.NumberOfConsultingPhysicians = NumberOfConsultingPhysicians;
+    if (NumberOfNursingStaff !== undefined)
+      updateData.NumberOfNursingStaff = NumberOfNursingStaff;
     if (NumberOfBeds !== undefined) updateData.NumberOfBeds = NumberOfBeds;
-    if (NumberOfICUBeds !== undefined) updateData.NumberOfICUBeds = NumberOfICUBeds;
+    if (NumberOfICUBeds !== undefined)
+      updateData.NumberOfICUBeds = NumberOfICUBeds;
     if (NumberOfOTs !== undefined) updateData.NumberOfOTs = NumberOfOTs;
 
     const updatedAsset = await Asset.findByIdAndUpdate(
@@ -200,7 +220,8 @@ exports.updateHospitalSize = async (req, res) => {
         data: {
           NumberOfDepartments: updatedAsset.NumberOfDepartments,
           NumberOfDoctors: updatedAsset.NumberOfDoctors,
-          NumberOfConsultingPhysicians: updatedAsset.NumberOfConsultingPhysicians,
+          NumberOfConsultingPhysicians:
+            updatedAsset.NumberOfConsultingPhysicians,
           NumberOfNursingStaff: updatedAsset.NumberOfNursingStaff,
           NumberOfBeds: updatedAsset.NumberOfBeds,
           NumberOfICUBeds: updatedAsset.NumberOfICUBeds,
@@ -239,12 +260,7 @@ exports.getHospitalSize = async (req, res) => {
 exports.updateAddress = async (req, res) => {
   try {
     const { AssetId } = req.params;
-    const {
-      AddressLine1,
-      AddressLine2,
-      PostalCode,
-      GeoLocation,
-    } = req.body;
+    const { AddressLine1, AddressLine2, PostalCode, GeoLocation } = req.body;
 
     const asset = await Asset.findById(AssetId);
     if (!asset) {
@@ -434,6 +450,85 @@ exports.updateMedicalSpecialties = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+exports.updateMedicalSpecialties_new = async (req, res) => {
+  try {
+    const { AssetId } = req.params;
+    const { MedicalSpecialties, Specialization } = req.body;
+
+    // Validate AssetId
+    if (!mongoose.Types.ObjectId.isValid(AssetId)) {
+      return res.json(__requestResponse("400", "Invalid Asset ID"));
+    }
+
+    // Check if asset exists
+    const asset = await Asset.findById(AssetId);
+    if (!asset) {
+      return res.json(__requestResponse("404", "Asset not found"));
+    }
+
+    // Store old value for audit log
+    const oldValue = {
+      MedicalSpecialties: asset.MedicalSpecialties,
+      Specialization: asset.Specialization,
+    };
+
+    // Build update object (only update fields that are provided)
+    const updateData = {};
+    if (MedicalSpecialties !== undefined) {
+      updateData.MedicalSpecialties = MedicalSpecialties;
+    }
+    if (Specialization !== undefined) {
+      updateData.Specialization = Specialization;
+    }
+
+    // Check if there's anything to update
+    if (Object.keys(updateData).length === 0) {
+      return res.json(
+        __requestResponse("400", "No fields provided for update")
+      );
+    }
+
+    // Update asset
+    const updatedAsset = await Asset.findByIdAndUpdate(
+      AssetId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate("MedicalSpecialties", "lookup_value");
+
+    // Create audit log
+    // await __CreateAuditLog(
+    //   "asset_master",
+    //   "UPDATE",
+    //   // "MEDICAL_SPECIALTIES",
+    //   null,
+    //   oldValue,
+    //   {
+    //     MedicalSpecialties: updatedAsset.MedicalSpecialties,
+    //     Specialization: updatedAsset.Specialization,
+    //   },
+    //   AssetId,
+    //   // req.user?._id || req.body.UpdatedBy, // Use authenticated user ID
+    //   null,
+    //   null
+    // );
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        message: "Medical specialties updated successfully",
+        data: {
+          AssetId: updatedAsset._id,
+          MedicalSpecialties: updatedAsset.MedicalSpecialties,
+          Specialization: updatedAsset.Specialization,
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Update Medical Specialties Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 
 exports.getMedicalSpecialties = async (req, res) => {
   try {

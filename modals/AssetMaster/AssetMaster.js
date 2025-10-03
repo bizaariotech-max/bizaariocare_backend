@@ -102,10 +102,10 @@ const AssetMasterSchema = new mongoose.Schema(
     VideoBio: String, // Virtual tour link
     // for doctors
     Fellowships: [String],
-    NoofSurgeriesPerformed: [String],
-    NoofSatisfiedPatients: [String],
-    NoofArticlesPublished: [String],
-    NoofLecturesDelivered: [String],
+    NoofSurgeriesPerformed: String,
+    NoofSatisfiedPatients: String,
+    NoofArticlesPublished: String,
+    NoofLecturesDelivered: String,
     // -------------------------
     // Section 8: Medical Specialties
     // -------------------------
