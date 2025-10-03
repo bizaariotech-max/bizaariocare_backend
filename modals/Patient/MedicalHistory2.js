@@ -147,17 +147,48 @@ const MedicalHistorySchema = new Schema(
     MedicinesPrescribed: MedicinesPrescribedSchema,
     Therapies: [TherapySchema],
     SurgeriesProcedures: [SurgeryProcedureSchema],
+
+    FamilyHistory: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    HabitLifestyle: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    Allergies: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+
     Status: {
       type: String,
-      enum: ["Active", "Ongoing", "In-Treatment", "Monitoring", "Chronic", "Resolved", "Cured", "Past"],
+      enum: [
+        "Active",
+        "Ongoing",
+        "In-Treatment",
+        "Monitoring",
+        "Chronic",
+        "Resolved",
+        "Cured",
+        "Past",
+      ],
       default: "Active",
     },
     Notes: { type: String, trim: true },
     IsActive: { type: Boolean, default: true },
     IsDeleted: { type: Boolean, default: false },
-    CreatedBy: { type: Schema.Types.ObjectId, ref: "asset_master",
+    CreatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "asset_master",
       //  required: true
-       },
+    },
     UpdatedBy: { type: Schema.Types.ObjectId, ref: "asset_master" },
   },
   { timestamps: true }

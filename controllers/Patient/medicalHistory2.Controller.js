@@ -83,6 +83,10 @@ const populateConfigs = {
       select: "lookup_value",
     },
   ],
+  // new fields
+  FamilyHistory: [{ path: "FamilyHistory", select: "lookup_value" }],
+  HabitLifestyle: [{ path: "HabitLifestyle", select: "lookup_value" }],
+  Allergies: [{ path: "Allergies", select: "lookup_value" }],
 };
 
 // ===================
@@ -2978,7 +2982,6 @@ exports.listSurgeriesProcedures = async (req, res) => {
   }
 };
 
-
 // Keep all existing main medical history functions unchanged
 exports.saveMedicalHistory = async (req, res) => {
   const session = await mongoose.startSession();
@@ -4274,89 +4277,89 @@ exports.getMedicalHistoryById = async (req, res) => {
 const medicalHistoryPopulateConfig = [
   // Case File and Patient
   {
-    path: 'CaseFileId',
-    select: '_id CaseFileNumber Date TreatmentType'
+    path: "CaseFileId",
+    select: "_id CaseFileNumber Date TreatmentType",
   },
   {
-    path: 'PatientId', 
-    select: '_id Name PatientId PhoneNumber'
+    path: "PatientId",
+    select: "_id Name PatientId PhoneNumber",
   },
-  
+
   // Created/Updated By
   {
-    path: 'CreatedBy',
-    select: '_id Name Email'
+    path: "CreatedBy",
+    select: "_id Name Email",
   },
   {
-    path: 'UpdatedBy', 
-    select: '_id Name Email'
+    path: "UpdatedBy",
+    select: "_id Name Email",
   },
-  
+
   // Chief Complaints deep population
   {
-    path: 'ChiefComplaints.Symptoms',
-    select: '_id lookup_value'
+    path: "ChiefComplaints.Symptoms",
+    select: "_id lookup_value",
   },
   {
-    path: 'ChiefComplaints.Duration.Unit',
-    select: '_id lookup_value' 
+    path: "ChiefComplaints.Duration.Unit",
+    select: "_id lookup_value",
   },
   {
-    path: 'ChiefComplaints.AggravatingFactors',
-    select: '_id lookup_value'
+    path: "ChiefComplaints.AggravatingFactors",
+    select: "_id lookup_value",
   },
-  
+
   // Clinical Diagnoses deep population
   {
-    path: 'ClinicalDiagnoses.InvestigationCategory',
-    select: '_id lookup_value'
+    path: "ClinicalDiagnoses.InvestigationCategory",
+    select: "_id lookup_value",
   },
   {
-    path: 'ClinicalDiagnoses.Investigation', 
-    select: '_id lookup_value'
+    path: "ClinicalDiagnoses.Investigation",
+    select: "_id lookup_value",
   },
   {
-    path: 'ClinicalDiagnoses.Abnormalities',
-    select: '_id lookup_value'
+    path: "ClinicalDiagnoses.Abnormalities",
+    select: "_id lookup_value",
   },
-  
+
   // Medicines Prescribed deep population
   {
-    path: 'MedicinesPrescribed.Medicines.MedicineName',
-    select: '_id lookup_value'
+    path: "MedicinesPrescribed.Medicines.MedicineName",
+    select: "_id lookup_value",
   },
   {
-    path: 'MedicinesPrescribed.Medicines.Dosage',
-    select: '_id lookup_value' 
+    path: "MedicinesPrescribed.Medicines.Dosage",
+    select: "_id lookup_value",
   },
   {
-    path: 'MedicinesPrescribed.RecoveryCycle.Unit',
-    select: '_id lookup_value'
+    path: "MedicinesPrescribed.RecoveryCycle.Unit",
+    select: "_id lookup_value",
   },
-  
-  // Therapies deep population  
+
+  // Therapies deep population
   {
-    path: 'Therapies.TherapyName',
-    select: '_id lookup_value'
+    path: "Therapies.TherapyName",
+    select: "_id lookup_value",
   },
-  
+
   // Surgeries/Procedures deep population
   {
-    path: 'SurgeriesProcedures.MedicalSpeciality',
-    select: '_id lookup_value'
+    path: "SurgeriesProcedures.MedicalSpeciality",
+    select: "_id lookup_value",
   },
   {
-    path: 'SurgeriesProcedures.SurgeryProcedureName', 
-    select: '_id lookup_value'
+    path: "SurgeriesProcedures.SurgeryProcedureName",
+    select: "_id lookup_value",
   },
   {
-    path: 'SurgeriesProcedures.RecoveryCycle.Unit',
-    select: '_id lookup_value'
+    path: "SurgeriesProcedures.RecoveryCycle.Unit",
+    select: "_id lookup_value",
   },
   {
-    path: 'SurgeriesProcedures.PostSurgeryComplications',
-    select: '_id lookup_value'
-  }
+    path: "SurgeriesProcedures.PostSurgeryComplications",
+    select: "_id lookup_value",
+  },
 ];
 
 // Combined controller for both list and single record
@@ -4384,7 +4387,7 @@ exports.getMedicalHistory_P = async (req, res) => {
     } else {
       // Build list query filters
       if (CaseFileId) query.CaseFileId = CaseFileId;
-      if (PatientId) query.PatientId = PatientId; 
+      if (PatientId) query.PatientId = PatientId;
       if (Status) query.Status = Status;
 
       // Date range filter
@@ -4412,11 +4415,10 @@ exports.getMedicalHistory_P = async (req, res) => {
       }
 
       return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
-      
     } else {
       // List query with pagination
       const total = await MedicalHistory.countDocuments(query);
-      
+
       const medicalHistories = await MedicalHistory.find(query)
         .populate(medicalHistoryPopulateConfig)
         .sort({ createdAt: -1 })
@@ -4442,7 +4444,6 @@ exports.getMedicalHistory_P = async (req, res) => {
         })
       );
     }
-    
   } catch (error) {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
@@ -4483,7 +4484,7 @@ exports.medicalHistoryList_P = async (req, res) => {
 
     // Get total count and records
     const total = await MedicalHistory.countDocuments(query);
-    
+
     const medicalHistories = await MedicalHistory.find(query)
       .populate(medicalHistoryPopulateConfig)
       .sort({ createdAt: -1 })
@@ -4495,7 +4496,7 @@ exports.medicalHistoryList_P = async (req, res) => {
       __requestResponse("200", __SUCCESS, {
         total,
         page: Number(page),
-        limit: Number(limit), 
+        limit: Number(limit),
         totalPages: Math.ceil(total / limit),
         filters: {
           CaseFileId,
@@ -4547,7 +4548,9 @@ exports.getMedicalHistoryByCaseFileId_P = async (req, res) => {
       .lean();
 
     if (!medicalHistory) {
-      return res.json(__requestResponse("404", "Medical History not found for this Case File"));
+      return res.json(
+        __requestResponse("404", "Medical History not found for this Case File")
+      );
     }
 
     return res.json(__requestResponse("200", __SUCCESS, medicalHistory));
@@ -4591,8 +4594,7 @@ exports.getMedicalHistoriesByCaseFileId_P = async (req, res) => {
   }
 };
 
-
-// *end 
+// *end
 
 exports.deleteMedicalHistory = async (req, res) => {
   const session = await mongoose.startSession();
@@ -4671,7 +4673,10 @@ exports.deleteSectionItem = async (req, res) => {
 
     await __CreateAuditLog(
       "medical_history",
-      "DELETE_SECTION_ITEM",
+      // "DELETE_SECTION_ITEM",
+      "DELETE",
+      null,
+      
       sectionName,
       oldValue,
       medicalHistory.toObject(),
@@ -4689,7 +4694,7 @@ exports.deleteSectionItem = async (req, res) => {
   }
 };
 
-// Status Update 
+// Status Update
 exports.updateMedicalHistoryStatus = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -4762,55 +4767,64 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
 };
 
 
-// new fields
-
 // ==================== FAMILY HISTORY ====================
 
-// Update Family History (Replace entire array)
+// Update Family History (Replace entire array) - NO TRANSACTION
 exports.updateFamilyHistory = async (req, res) => {
-  const session = await mongoose.startSession();
   try {
-    session.startTransaction();
     const { CaseFileId, FamilyHistory, UpdatedBy } = req.body;
 
-    const medicalHistory = await getOrCreateMedicalHistory(
+    // Find or create medical history
+    let medicalHistory = await MedicalHistory.findOne({
       CaseFileId,
-      req.caseFile.PatientId,
-      UpdatedBy,
-      session
-    );
+      IsDeleted: false,
+    });
 
-    const oldValue = medicalHistory.toObject();
-    medicalHistory.FamilyHistory = FamilyHistory;
-    medicalHistory.UpdatedBy = UpdatedBy;
-    await medicalHistory.save({ session });
+    if (!medicalHistory) {
+      // Create new medical history if not exists
+      medicalHistory = new MedicalHistory({
+        CaseFileId,
+        PatientId: req.caseFile.PatientId,
+        FamilyHistory: FamilyHistory,
+        CreatedBy: UpdatedBy,
+        UpdatedBy: UpdatedBy,
+      });
+    } else {
+      // Update existing
+      const oldValue = medicalHistory.toObject();
+      medicalHistory.FamilyHistory = FamilyHistory;
+      medicalHistory.UpdatedBy = UpdatedBy;
 
-    await __CreateAuditLog(
-      "medical_history",
-      "UPDATE_FAMILY_HISTORY",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "UPDATE",
+        // "UPDATE_FAMILY_HISTORY",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id,
+        UpdatedBy,
+        null
+      );
+    }
 
-    await session.commitTransaction();
-    session.endSession();
+    await medicalHistory.save();
 
+    // Populate and return
     const populated = await MedicalHistory.findById(medicalHistory._id)
-      .populate("FamilyHistory", "_id lookup_value")
+      // .populate("FamilyHistory", "_id lookup_value")
       .populate("CaseFileId", "CaseFileNumber Date")
       .populate("PatientId", "Name PatientId");
 
     return res.json(__requestResponse("200", __SUCCESS, populated));
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    console.error("Update Family History Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
-// List Family History
+// List Family History - NO TRANSACTION
 exports.listFamilyHistory = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
@@ -4860,8 +4874,8 @@ exports.listFamilyHistory = async (req, res) => {
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
           FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
-          CaseFile: 1,
-          Patient: 1,
+          CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+          Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
       { $sort: { "FamilyHistoryItem.lookup_value": 1 } },
@@ -4887,43 +4901,56 @@ exports.listFamilyHistory = async (req, res) => {
       })
     );
   } catch (error) {
+    console.error("List Family History Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
 // ==================== HABIT LIFESTYLE ====================
 
-// Update Habit Lifestyle (Replace entire array)
+// Update Habit Lifestyle (Replace entire array) - NO TRANSACTION
 exports.updateHabitLifestyle = async (req, res) => {
-  const session = await mongoose.startSession();
   try {
-    session.startTransaction();
     const { CaseFileId, HabitLifestyle, UpdatedBy } = req.body;
 
-    const medicalHistory = await getOrCreateMedicalHistory(
+    // Find or create medical history
+    let medicalHistory = await MedicalHistory.findOne({
       CaseFileId,
-      req.caseFile.PatientId,
-      UpdatedBy,
-      session
-    );
+      IsDeleted: false,
+    });
 
-    const oldValue = medicalHistory.toObject();
-    medicalHistory.HabitLifestyle = HabitLifestyle;
-    medicalHistory.UpdatedBy = UpdatedBy;
-    await medicalHistory.save({ session });
+    if (!medicalHistory) {
+      // Create new medical history if not exists
+      medicalHistory = new MedicalHistory({
+        CaseFileId,
+        PatientId: req.caseFile.PatientId,
+        HabitLifestyle: HabitLifestyle,
+        CreatedBy: UpdatedBy,
+        UpdatedBy: UpdatedBy,
+      });
+    } else {
+      // Update existing
+      const oldValue = medicalHistory.toObject();
+      medicalHistory.HabitLifestyle = HabitLifestyle;
+      medicalHistory.UpdatedBy = UpdatedBy;
 
-    await __CreateAuditLog(
-      "medical_history",
-      "UPDATE_HABIT_LIFESTYLE",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "UPDATE",
+        // "UPDATE_HABIT_LIFESTYLE",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id,
+        UpdatedBy,
+        null
+      );
+    }
 
-    await session.commitTransaction();
-    session.endSession();
+    await medicalHistory.save();
 
+    // Populate and return
     const populated = await MedicalHistory.findById(medicalHistory._id)
       .populate("HabitLifestyle", "_id lookup_value")
       .populate("CaseFileId", "CaseFileNumber Date")
@@ -4931,13 +4958,12 @@ exports.updateHabitLifestyle = async (req, res) => {
 
     return res.json(__requestResponse("200", __SUCCESS, populated));
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    console.error("Update Habit Lifestyle Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
-// List Habit Lifestyle
+// List Habit Lifestyle - NO TRANSACTION
 exports.listHabitLifestyle = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
@@ -4987,8 +5013,8 @@ exports.listHabitLifestyle = async (req, res) => {
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
           HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
-          CaseFile: 1,
-          Patient: 1,
+          CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+          Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
       { $sort: { "HabitLifestyleItem.lookup_value": 1 } },
@@ -5014,43 +5040,56 @@ exports.listHabitLifestyle = async (req, res) => {
       })
     );
   } catch (error) {
+    console.error("List Habit Lifestyle Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
 // ==================== ALLERGIES ====================
 
-// Update Allergies (Replace entire array)
+// Update Allergies (Replace entire array) - NO TRANSACTION
 exports.updateAllergies = async (req, res) => {
-  const session = await mongoose.startSession();
   try {
-    session.startTransaction();
     const { CaseFileId, Allergies, UpdatedBy } = req.body;
 
-    const medicalHistory = await getOrCreateMedicalHistory(
+    // Find or create medical history
+    let medicalHistory = await MedicalHistory.findOne({
       CaseFileId,
-      req.caseFile.PatientId,
-      UpdatedBy,
-      session
-    );
+      IsDeleted: false,
+    });
 
-    const oldValue = medicalHistory.toObject();
-    medicalHistory.Allergies = Allergies;
-    medicalHistory.UpdatedBy = UpdatedBy;
-    await medicalHistory.save({ session });
+    if (!medicalHistory) {
+      // Create new medical history if not exists
+      medicalHistory = new MedicalHistory({
+        CaseFileId,
+        PatientId: req.caseFile.PatientId,
+        Allergies: Allergies,
+        CreatedBy: UpdatedBy,
+        UpdatedBy: UpdatedBy,
+      });
+    } else {
+      // Update existing
+      const oldValue = medicalHistory.toObject();
+      medicalHistory.Allergies = Allergies;
+      medicalHistory.UpdatedBy = UpdatedBy;
 
-    await __CreateAuditLog(
-      "medical_history",
-      "UPDATE_ALLERGIES",
-      null,
-      oldValue,
-      medicalHistory.toObject(),
-      medicalHistory._id
-    );
+      // Create audit log
+      await __CreateAuditLog(
+        "medical_history",
+        "UPDATE",
+        // "UPDATE_ALLERGIES",
+        null,
+        oldValue,
+        medicalHistory.toObject(),
+        medicalHistory._id,
+        UpdatedBy,
+        null
+      );
+    }
 
-    await session.commitTransaction();
-    session.endSession();
+    await medicalHistory.save();
 
+    // Populate and return
     const populated = await MedicalHistory.findById(medicalHistory._id)
       .populate("Allergies", "_id lookup_value")
       .populate("CaseFileId", "CaseFileNumber Date")
@@ -5058,13 +5097,12 @@ exports.updateAllergies = async (req, res) => {
 
     return res.json(__requestResponse("200", __SUCCESS, populated));
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    console.error("Update Allergies Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
-// List Allergies
+// List Allergies - NO TRANSACTION
 exports.listAllergies = async (req, res) => {
   try {
     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
@@ -5114,8 +5152,8 @@ exports.listAllergies = async (req, res) => {
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
           AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
-          CaseFile: 1,
-          Patient: 1,
+          CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+          Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
       { $sort: { "AllergyItem.lookup_value": 1 } },
@@ -5141,6 +5179,368 @@ exports.listAllergies = async (req, res) => {
       })
     );
   } catch (error) {
+    console.error("List Allergies Error:", error);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+
+// // new fields
+// // ==================== FAMILY HISTORY ====================
+// // Update Family History (Replace entire array)
+// exports.updateFamilyHistory = async (req, res) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+  
+//   try {
+//     const { CaseFileId, FamilyHistory, UpdatedBy } = req.body;
+
+//     const medicalHistory = await getOrCreateMedicalHistory(
+//       CaseFileId,
+//       req.caseFile.PatientId,
+//       UpdatedBy,
+//       session
+//     );
+
+//     const oldValue = medicalHistory.toObject();
+//     medicalHistory.FamilyHistory = FamilyHistory;
+//     medicalHistory.UpdatedBy = UpdatedBy;
+//     await medicalHistory.save({ session });
+
+//     await session.commitTransaction();
+
+//     const populated = await MedicalHistory.findById(medicalHistory._id)
+//       .populate("FamilyHistory", "_id lookup_value")
+//       .populate("CaseFileId", "CaseFileNumber Date")
+//       .populate("PatientId", "Name PatientId");
+
+//     return res.json(__requestResponse("200", __SUCCESS, populated));
+//   } catch (error) {
+//     await session.abortTransaction();
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
+// // List Family History
+// exports.listFamilyHistory = async (req, res) => {
+//   try {
+//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+//     const query = { IsDeleted: false };
+//     if (CaseFileId) query.CaseFileId = CaseFileId;
+//     if (PatientId) query.PatientId = PatientId;
+
+//     let pipeline = [
+//       { $match: query },
+//       { $unwind: { path: "$FamilyHistory", preserveNullAndEmptyArrays: false } },
+//       {
+//         $lookup: {
+//           from: "admin_lookups",
+//           localField: "FamilyHistory",
+//           foreignField: "_id",
+//           as: "familyHistoryItem",
+//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_case_files",
+//           localField: "CaseFileId",
+//           foreignField: "_id",
+//           as: "CaseFile",
+//           pipeline: [
+//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_masters",
+//           localField: "PatientId",
+//           foreignField: "_id",
+//           as: "Patient",
+//           pipeline: [
+//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: "$FamilyHistory",
+//           medicalHistoryId: "$_id",
+//           CaseFileId: "$CaseFileId",
+//           PatientId: "$PatientId",
+//           FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
+//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+//           Patient: { $arrayElemAt: ["$Patient", 0] },
+//         },
+//       },
+//       { $sort: { "FamilyHistoryItem.lookup_value": 1 } },
+//       { $skip: (page - 1) * parseInt(limit) },
+//       { $limit: parseInt(limit) },
+//     ];
+
+//     const results = await MedicalHistory.aggregate(pipeline);
+
+//     const total = await MedicalHistory.aggregate([
+//       { $match: query },
+//       { $unwind: "$FamilyHistory" },
+//       { $count: "total" },
+//     ]);
+
+//     return res.json(
+//       __requestResponse("200", __SUCCESS, {
+//         total: total[0]?.total || 0,
+//         page: Number(page),
+//         limit: Number(limit),
+//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
+//         list: __deepClone(results),
+//       })
+//     );
+//   } catch (error) {
+//     console.error("List Family History Error:", error);
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   }
+// };
+
+// // ==================== HABIT LIFESTYLE ====================
+
+// // Update Habit Lifestyle (Replace entire array)
+// exports.updateHabitLifestyle = async (req, res) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+  
+//   try {
+//     const { CaseFileId, HabitLifestyle, UpdatedBy } = req.body;
+
+//     const medicalHistory = await getOrCreateMedicalHistory(
+//       CaseFileId,
+//       req.caseFile.PatientId,
+//       UpdatedBy,
+//       session
+//     );
+
+//     const oldValue = medicalHistory.toObject();
+//     medicalHistory.HabitLifestyle = HabitLifestyle;
+//     medicalHistory.UpdatedBy = UpdatedBy;
+//     await medicalHistory.save({ session });
+
+//     await session.commitTransaction();
+
+//     const populated = await MedicalHistory.findById(medicalHistory._id)
+//       .populate("HabitLifestyle", "_id lookup_value")
+//       .populate("CaseFileId", "CaseFileNumber Date")
+//       .populate("PatientId", "Name PatientId");
+
+//     return res.json(__requestResponse("200", __SUCCESS, populated));
+//   } catch (error) {
+//     await session.abortTransaction();
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
+// // List Habit Lifestyle
+// exports.listHabitLifestyle = async (req, res) => {
+//   try {
+//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+//     const query = { IsDeleted: false };
+//     if (CaseFileId) query.CaseFileId = CaseFileId;
+//     if (PatientId) query.PatientId = PatientId;
+
+//     let pipeline = [
+//       { $match: query },
+//       { $unwind: { path: "$HabitLifestyle", preserveNullAndEmptyArrays: false } },
+//       {
+//         $lookup: {
+//           from: "admin_lookups",
+//           localField: "HabitLifestyle",
+//           foreignField: "_id",
+//           as: "habitLifestyleItem",
+//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_case_files",
+//           localField: "CaseFileId",
+//           foreignField: "_id",
+//           as: "CaseFile",
+//           pipeline: [
+//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_masters",
+//           localField: "PatientId",
+//           foreignField: "_id",
+//           as: "Patient",
+//           pipeline: [
+//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: "$HabitLifestyle",
+//           medicalHistoryId: "$_id",
+//           CaseFileId: "$CaseFileId",
+//           PatientId: "$PatientId",
+//           HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
+//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+//           Patient: { $arrayElemAt: ["$Patient", 0] },
+//         },
+//       },
+//       { $sort: { "HabitLifestyleItem.lookup_value": 1 } },
+//       { $skip: (page - 1) * parseInt(limit) },
+//       { $limit: parseInt(limit) },
+//     ];
+
+//     const results = await MedicalHistory.aggregate(pipeline);
+
+//     const total = await MedicalHistory.aggregate([
+//       { $match: query },
+//       { $unwind: "$HabitLifestyle" },
+//       { $count: "total" },
+//     ]);
+
+//     return res.json(
+//       __requestResponse("200", __SUCCESS, {
+//         total: total[0]?.total || 0,
+//         page: Number(page),
+//         limit: Number(limit),
+//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
+//         list: __deepClone(results),
+//       })
+//     );
+//   } catch (error) {
+//     console.error("List Habit Lifestyle Error:", error);
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   }
+// };
+
+// // ==================== ALLERGIES ====================
+
+// // Update Allergies (Replace entire array)
+// exports.updateAllergies = async (req, res) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+  
+//   try {
+//     const { CaseFileId, Allergies, UpdatedBy } = req.body;
+
+//     const medicalHistory = await getOrCreateMedicalHistory(
+//       CaseFileId,
+//       req.caseFile.PatientId,
+//       UpdatedBy,
+//       session
+//     );
+
+//     const oldValue = medicalHistory.toObject();
+//     medicalHistory.Allergies = Allergies;
+//     medicalHistory.UpdatedBy = UpdatedBy;
+//     await medicalHistory.save({ session });
+
+//     await session.commitTransaction();
+
+//     const populated = await MedicalHistory.findById(medicalHistory._id)
+//       .populate("Allergies", "_id lookup_value")
+//       .populate("CaseFileId", "CaseFileNumber Date")
+//       .populate("PatientId", "Name PatientId");
+
+//     return res.json(__requestResponse("200", __SUCCESS, populated));
+//   } catch (error) {
+//     await session.abortTransaction();
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
+// // List Allergies
+// exports.listAllergies = async (req, res) => {
+//   try {
+//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+//     const query = { IsDeleted: false };
+//     if (CaseFileId) query.CaseFileId = CaseFileId;
+//     if (PatientId) query.PatientId = PatientId;
+
+//     let pipeline = [
+//       { $match: query },
+//       { $unwind: { path: "$Allergies", preserveNullAndEmptyArrays: false } },
+//       {
+//         $lookup: {
+//           from: "admin_lookups",
+//           localField: "Allergies",
+//           foreignField: "_id",
+//           as: "allergyItem",
+//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_case_files",
+//           localField: "CaseFileId",
+//           foreignField: "_id",
+//           as: "CaseFile",
+//           pipeline: [
+//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "patient_masters",
+//           localField: "PatientId",
+//           foreignField: "_id",
+//           as: "Patient",
+//           pipeline: [
+//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+//           ],
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: "$Allergies",
+//           medicalHistoryId: "$_id",
+//           CaseFileId: "$CaseFileId",
+//           PatientId: "$PatientId",
+//           AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
+//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
+//           Patient: { $arrayElemAt: ["$Patient", 0] },
+//         },
+//       },
+//       { $sort: { "AllergyItem.lookup_value": 1 } },
+//       { $skip: (page - 1) * parseInt(limit) },
+//       { $limit: parseInt(limit) },
+//     ];
+
+//     const results = await MedicalHistory.aggregate(pipeline);
+
+//     const total = await MedicalHistory.aggregate([
+//       { $match: query },
+//       { $unwind: "$Allergies" },
+//       { $count: "total" },
+//     ]);
+
+//     return res.json(
+//       __requestResponse("200", __SUCCESS, {
+//         total: total[0]?.total || 0,
+//         page: Number(page),
+//         limit: Number(limit),
+//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
+//         list: __deepClone(results),
+//       })
+//     );
+//   } catch (error) {
+//     console.error("List Allergies Error:", error);
+//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+//   }
+// };
