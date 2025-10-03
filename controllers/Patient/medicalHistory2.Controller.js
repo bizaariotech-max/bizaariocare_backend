@@ -4827,7 +4827,7 @@ exports.updateFamilyHistory = async (req, res) => {
 // List Family History - NO TRANSACTION
 exports.listFamilyHistory = async (req, res) => {
   try {
-    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
     const query = { IsDeleted: false };
     if (CaseFileId) query.CaseFileId = CaseFileId;
@@ -4835,7 +4835,13 @@ exports.listFamilyHistory = async (req, res) => {
 
     let pipeline = [
       { $match: query },
-      { $unwind: { path: "$FamilyHistory", preserveNullAndEmptyArrays: false } },
+      {
+        $unwind: {
+          path: "$FamilyHistory",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Family History Item - only _id and lookup_value
       {
         $lookup: {
           from: "admin_lookups",
@@ -4845,6 +4851,7 @@ exports.listFamilyHistory = async (req, res) => {
           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
         },
       },
+      // Lookup Case File - only essential fields
       {
         $lookup: {
           from: "patient_case_files",
@@ -4852,10 +4859,18 @@ exports.listFamilyHistory = async (req, res) => {
           foreignField: "_id",
           as: "CaseFile",
           pipeline: [
-            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
           ],
         },
       },
+      // Lookup Patient - only essential fields
       {
         $lookup: {
           from: "patient_masters",
@@ -4867,18 +4882,30 @@ exports.listFamilyHistory = async (req, res) => {
           ],
         },
       },
+      // Final projection with populated data
       {
         $project: {
           _id: "$FamilyHistory",
           medicalHistoryId: "$_id",
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
-          FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
+          FamilyHistory: {
+            _id: "$FamilyHistory",
+            FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
+          },
+          createdAt: "$createdAt",
+          updatedAt: "$updatedAt",
           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
           Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
-      { $sort: { "FamilyHistoryItem.lookup_value": 1 } },
+      // Sort by latest first
+      {
+        $sort: {
+          createdAt: -1,
+          updatedAt: -1,
+        },
+      },
       { $skip: (page - 1) * parseInt(limit) },
       { $limit: parseInt(limit) },
     ];
@@ -4966,7 +4993,7 @@ exports.updateHabitLifestyle = async (req, res) => {
 // List Habit Lifestyle - NO TRANSACTION
 exports.listHabitLifestyle = async (req, res) => {
   try {
-    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
     const query = { IsDeleted: false };
     if (CaseFileId) query.CaseFileId = CaseFileId;
@@ -4974,7 +5001,13 @@ exports.listHabitLifestyle = async (req, res) => {
 
     let pipeline = [
       { $match: query },
-      { $unwind: { path: "$HabitLifestyle", preserveNullAndEmptyArrays: false } },
+      {
+        $unwind: {
+          path: "$HabitLifestyle",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Habit Lifestyle Item - only _id and lookup_value
       {
         $lookup: {
           from: "admin_lookups",
@@ -4984,6 +5017,7 @@ exports.listHabitLifestyle = async (req, res) => {
           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
         },
       },
+      // Lookup Case File - only essential fields
       {
         $lookup: {
           from: "patient_case_files",
@@ -4991,10 +5025,18 @@ exports.listHabitLifestyle = async (req, res) => {
           foreignField: "_id",
           as: "CaseFile",
           pipeline: [
-            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
           ],
         },
       },
+      // Lookup Patient - only essential fields
       {
         $lookup: {
           from: "patient_masters",
@@ -5006,18 +5048,30 @@ exports.listHabitLifestyle = async (req, res) => {
           ],
         },
       },
+      // Final projection with populated data
       {
         $project: {
           _id: "$HabitLifestyle",
           medicalHistoryId: "$_id",
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
-          HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
+          HabitLifestyle: {
+            _id: "$HabitLifestyle",
+            HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
+          },
+          createdAt: "$createdAt",
+          updatedAt: "$updatedAt",
           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
           Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
-      { $sort: { "HabitLifestyleItem.lookup_value": 1 } },
+      // Sort by latest first
+      {
+        $sort: {
+          createdAt: -1,
+          updatedAt: -1,
+        },
+      },
       { $skip: (page - 1) * parseInt(limit) },
       { $limit: parseInt(limit) },
     ];
@@ -5105,7 +5159,7 @@ exports.updateAllergies = async (req, res) => {
 // List Allergies - NO TRANSACTION
 exports.listAllergies = async (req, res) => {
   try {
-    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+    const { CaseFileId, PatientId, page = 1, limit = 10, search } = req.query;
 
     const query = { IsDeleted: false };
     if (CaseFileId) query.CaseFileId = CaseFileId;
@@ -5113,7 +5167,13 @@ exports.listAllergies = async (req, res) => {
 
     let pipeline = [
       { $match: query },
-      { $unwind: { path: "$Allergies", preserveNullAndEmptyArrays: false } },
+      {
+        $unwind: {
+          path: "$Allergies",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      // Lookup Allergy Item - only _id and lookup_value
       {
         $lookup: {
           from: "admin_lookups",
@@ -5123,6 +5183,7 @@ exports.listAllergies = async (req, res) => {
           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
         },
       },
+      // Lookup Case File - only essential fields
       {
         $lookup: {
           from: "patient_case_files",
@@ -5130,10 +5191,18 @@ exports.listAllergies = async (req, res) => {
           foreignField: "_id",
           as: "CaseFile",
           pipeline: [
-            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+            {
+              $project: {
+                _id: 1,
+                TreatmentType: 1,
+                Date: 1,
+                CaseFileNumber: 1,
+              },
+            },
           ],
         },
       },
+      // Lookup Patient - only essential fields
       {
         $lookup: {
           from: "patient_masters",
@@ -5145,18 +5214,30 @@ exports.listAllergies = async (req, res) => {
           ],
         },
       },
+      // Final projection with populated data
       {
         $project: {
           _id: "$Allergies",
           medicalHistoryId: "$_id",
           CaseFileId: "$CaseFileId",
           PatientId: "$PatientId",
-          AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
+          Allergy: {
+            _id: "$Allergies",
+            AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
+          },
+          createdAt: "$createdAt",
+          updatedAt: "$updatedAt",
           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
           Patient: { $arrayElemAt: ["$Patient", 0] },
         },
       },
-      { $sort: { "AllergyItem.lookup_value": 1 } },
+      // Sort by latest first
+      {
+        $sort: {
+          createdAt: -1,
+          updatedAt: -1,
+        },
+      },
       { $skip: (page - 1) * parseInt(limit) },
       { $limit: parseInt(limit) },
     ];
@@ -5223,88 +5304,6 @@ exports.listAllergies = async (req, res) => {
 //   }
 // };
 
-// // List Family History
-// exports.listFamilyHistory = async (req, res) => {
-//   try {
-//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
-
-//     const query = { IsDeleted: false };
-//     if (CaseFileId) query.CaseFileId = CaseFileId;
-//     if (PatientId) query.PatientId = PatientId;
-
-//     let pipeline = [
-//       { $match: query },
-//       { $unwind: { path: "$FamilyHistory", preserveNullAndEmptyArrays: false } },
-//       {
-//         $lookup: {
-//           from: "admin_lookups",
-//           localField: "FamilyHistory",
-//           foreignField: "_id",
-//           as: "familyHistoryItem",
-//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_case_files",
-//           localField: "CaseFileId",
-//           foreignField: "_id",
-//           as: "CaseFile",
-//           pipeline: [
-//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_masters",
-//           localField: "PatientId",
-//           foreignField: "_id",
-//           as: "Patient",
-//           pipeline: [
-//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: "$FamilyHistory",
-//           medicalHistoryId: "$_id",
-//           CaseFileId: "$CaseFileId",
-//           PatientId: "$PatientId",
-//           FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
-//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
-//           Patient: { $arrayElemAt: ["$Patient", 0] },
-//         },
-//       },
-//       { $sort: { "FamilyHistoryItem.lookup_value": 1 } },
-//       { $skip: (page - 1) * parseInt(limit) },
-//       { $limit: parseInt(limit) },
-//     ];
-
-//     const results = await MedicalHistory.aggregate(pipeline);
-
-//     const total = await MedicalHistory.aggregate([
-//       { $match: query },
-//       { $unwind: "$FamilyHistory" },
-//       { $count: "total" },
-//     ]);
-
-//     return res.json(
-//       __requestResponse("200", __SUCCESS, {
-//         total: total[0]?.total || 0,
-//         page: Number(page),
-//         limit: Number(limit),
-//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
-//         list: __deepClone(results),
-//       })
-//     );
-//   } catch (error) {
-//     console.error("List Family History Error:", error);
-//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-//   }
-// };
-
 // // ==================== HABIT LIFESTYLE ====================
 
 // // Update Habit Lifestyle (Replace entire array)
@@ -5343,88 +5342,6 @@ exports.listAllergies = async (req, res) => {
 //   }
 // };
 
-// // List Habit Lifestyle
-// exports.listHabitLifestyle = async (req, res) => {
-//   try {
-//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
-
-//     const query = { IsDeleted: false };
-//     if (CaseFileId) query.CaseFileId = CaseFileId;
-//     if (PatientId) query.PatientId = PatientId;
-
-//     let pipeline = [
-//       { $match: query },
-//       { $unwind: { path: "$HabitLifestyle", preserveNullAndEmptyArrays: false } },
-//       {
-//         $lookup: {
-//           from: "admin_lookups",
-//           localField: "HabitLifestyle",
-//           foreignField: "_id",
-//           as: "habitLifestyleItem",
-//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_case_files",
-//           localField: "CaseFileId",
-//           foreignField: "_id",
-//           as: "CaseFile",
-//           pipeline: [
-//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_masters",
-//           localField: "PatientId",
-//           foreignField: "_id",
-//           as: "Patient",
-//           pipeline: [
-//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: "$HabitLifestyle",
-//           medicalHistoryId: "$_id",
-//           CaseFileId: "$CaseFileId",
-//           PatientId: "$PatientId",
-//           HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
-//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
-//           Patient: { $arrayElemAt: ["$Patient", 0] },
-//         },
-//       },
-//       { $sort: { "HabitLifestyleItem.lookup_value": 1 } },
-//       { $skip: (page - 1) * parseInt(limit) },
-//       { $limit: parseInt(limit) },
-//     ];
-
-//     const results = await MedicalHistory.aggregate(pipeline);
-
-//     const total = await MedicalHistory.aggregate([
-//       { $match: query },
-//       { $unwind: "$HabitLifestyle" },
-//       { $count: "total" },
-//     ]);
-
-//     return res.json(
-//       __requestResponse("200", __SUCCESS, {
-//         total: total[0]?.total || 0,
-//         page: Number(page),
-//         limit: Number(limit),
-//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
-//         list: __deepClone(results),
-//       })
-//     );
-//   } catch (error) {
-//     console.error("List Habit Lifestyle Error:", error);
-//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
-//   }
-// };
-
 // // ==================== ALLERGIES ====================
 
 // // Update Allergies (Replace entire array)
@@ -5460,87 +5377,5 @@ exports.listAllergies = async (req, res) => {
 //     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
 //   } finally {
 //     session.endSession();
-//   }
-// };
-
-// // List Allergies
-// exports.listAllergies = async (req, res) => {
-//   try {
-//     const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
-
-//     const query = { IsDeleted: false };
-//     if (CaseFileId) query.CaseFileId = CaseFileId;
-//     if (PatientId) query.PatientId = PatientId;
-
-//     let pipeline = [
-//       { $match: query },
-//       { $unwind: { path: "$Allergies", preserveNullAndEmptyArrays: false } },
-//       {
-//         $lookup: {
-//           from: "admin_lookups",
-//           localField: "Allergies",
-//           foreignField: "_id",
-//           as: "allergyItem",
-//           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_case_files",
-//           localField: "CaseFileId",
-//           foreignField: "_id",
-//           as: "CaseFile",
-//           pipeline: [
-//             { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "patient_masters",
-//           localField: "PatientId",
-//           foreignField: "_id",
-//           as: "Patient",
-//           pipeline: [
-//             { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
-//           ],
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: "$Allergies",
-//           medicalHistoryId: "$_id",
-//           CaseFileId: "$CaseFileId",
-//           PatientId: "$PatientId",
-//           AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
-//           CaseFile: { $arrayElemAt: ["$CaseFile", 0] },
-//           Patient: { $arrayElemAt: ["$Patient", 0] },
-//         },
-//       },
-//       { $sort: { "AllergyItem.lookup_value": 1 } },
-//       { $skip: (page - 1) * parseInt(limit) },
-//       { $limit: parseInt(limit) },
-//     ];
-
-//     const results = await MedicalHistory.aggregate(pipeline);
-
-//     const total = await MedicalHistory.aggregate([
-//       { $match: query },
-//       { $unwind: "$Allergies" },
-//       { $count: "total" },
-//     ]);
-
-//     return res.json(
-//       __requestResponse("200", __SUCCESS, {
-//         total: total[0]?.total || 0,
-//         page: Number(page),
-//         limit: Number(limit),
-//         totalPages: Math.ceil((total[0]?.total || 0) / limit),
-//         list: __deepClone(results),
-//       })
-//     );
-//   } catch (error) {
-//     console.error("List Allergies Error:", error);
-//     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
 //   }
 // };
