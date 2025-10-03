@@ -314,6 +314,11 @@ exports.updateAssetProfile = async (req, res) => {
       VideoGallery,
       ProfilePDF,
       VideoBio,
+      Fellowships,
+      NoofSurgeriesPerformed,
+      NoofSatisfiedPatients,
+      NoofArticlesPublished,
+      NoofLecturesDelivered,
     } = req.body;
 
     const asset = await Asset.findById(AssetId);
@@ -322,14 +327,28 @@ exports.updateAssetProfile = async (req, res) => {
     }
 
     const updateData = {};
-    if (ShortDescription !== undefined) updateData.ShortDescription = ShortDescription;
-    if (LongDescription !== undefined) updateData.LongDescription = LongDescription;
-    if (ProfilePicture !== undefined) updateData.ProfilePicture = ProfilePicture;
+    if (ShortDescription !== undefined)
+      updateData.ShortDescription = ShortDescription;
+    if (LongDescription !== undefined)
+      updateData.LongDescription = LongDescription;
+    if (ProfilePicture !== undefined)
+      updateData.ProfilePicture = ProfilePicture;
     if (Logo !== undefined) updateData.Logo = Logo;
-    if (PictureGallery !== undefined) updateData.PictureGallery = PictureGallery;
+    if (PictureGallery !== undefined)
+      updateData.PictureGallery = PictureGallery;
     if (VideoGallery !== undefined) updateData.VideoGallery = VideoGallery;
     if (ProfilePDF !== undefined) updateData.ProfilePDF = ProfilePDF;
     if (VideoBio !== undefined) updateData.VideoBio = VideoBio;
+
+    if (Fellowships !== undefined) updateData.Fellowships = Fellowships;
+    if (NoofSurgeriesPerformed !== undefined)
+      updateData.NoofSurgeriesPerformed = NoofSurgeriesPerformed;
+    if (NoofSatisfiedPatients !== undefined)
+      updateData.NoofSatisfiedPatients = NoofSatisfiedPatients;
+    if (NoofArticlesPublished !== undefined)
+      updateData.NoofArticlesPublished = NoofArticlesPublished;
+    if (NoofLecturesDelivered !== undefined)
+      updateData.NoofLecturesDelivered = NoofLecturesDelivered;
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
@@ -349,6 +368,11 @@ exports.updateAssetProfile = async (req, res) => {
           VideoGallery: updatedAsset.VideoGallery,
           ProfilePDF: updatedAsset.ProfilePDF,
           VideoBio: updatedAsset.VideoBio,
+          Fellowships: updatedAsset.Fellowships,
+          NoofSurgeriesPerformed: updatedAsset.NoofSurgeriesPerformed,
+          NoofSatisfiedPatients: updatedAsset.NoofSatisfiedPatients,
+          NoofArticlesPublished: updatedAsset.NoofArticlesPublished,
+          NoofLecturesDelivered: updatedAsset.NoofLecturesDelivered,
         },
       })
     );
@@ -383,7 +407,7 @@ exports.getAssetProfile = async (req, res) => {
 exports.updateMedicalSpecialties = async (req, res) => {
   try {
     const { AssetId } = req.params;
-    const { MedicalSpecialties } = req.body;
+    const { MedicalSpecialties, Specialization } = req.body;
 
     const asset = await Asset.findById(AssetId);
     if (!asset) {
@@ -392,7 +416,7 @@ exports.updateMedicalSpecialties = async (req, res) => {
 
     const updatedAsset = await Asset.findByIdAndUpdate(
       AssetId,
-      { $set: { MedicalSpecialties } },
+      { $set: { MedicalSpecialties, Specialization } },
       { new: true, runValidators: true }
     ).populate("MedicalSpecialties", "lookup_value");
 
@@ -401,6 +425,7 @@ exports.updateMedicalSpecialties = async (req, res) => {
         message: "Medical specialties updated successfully",
         data: {
           MedicalSpecialties: updatedAsset.MedicalSpecialties,
+          Specialization: updatedAsset.Specialization,
         },
       })
     );

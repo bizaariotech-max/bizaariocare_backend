@@ -1,3 +1,4 @@
+const { string } = require("joi");
 const mongoose = require("mongoose");
 
 // ASSET MASTER SCHEMA
@@ -99,7 +100,12 @@ const AssetMasterSchema = new mongoose.Schema(
     VideoGallery: [String],
     ProfilePDF: String,
     VideoBio: String, // Virtual tour link
-
+    // for doctors
+    Fellowships: [String],
+    NoofSurgeriesPerformed: [String],
+    NoofSatisfiedPatients: [String],
+    NoofArticlesPublished: [String],
+    NoofLecturesDelivered: [String],
     // -------------------------
     // Section 8: Medical Specialties
     // -------------------------
@@ -109,7 +115,7 @@ const AssetMasterSchema = new mongoose.Schema(
         ref: "admin_lookups",
       },
     ],
-
+    Specialization: [String],
     // -------------------------
     // Section 9: Social Media Assets
     // -------------------------
@@ -238,6 +244,5 @@ const AssetMasterSchema = new mongoose.Schema(
 // AssetMasterSchema.index({ AssetTypeID: 1, CityId: 1 }); // quick filtering by type + city
 // AssetMasterSchema.index({ ParentID: 1, AssetName: 1 }); // child lookup + search by name
 // AssetMasterSchema.index({ "TreatmentPackages.PackageName": 1 }); // search inside embedded docs
-
 
 module.exports = mongoose.model("asset_master", AssetMasterSchema);
