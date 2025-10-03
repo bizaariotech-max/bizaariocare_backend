@@ -122,6 +122,8 @@ const surgeryProcedureSchema = Joi.object({
   DischargeSummaryUrlNote: Joi.string().trim().allow("", null).optional(),
 });
 
+
+
 // Section-specific validation schemas
 const sectionSchemas = {
   ChiefComplaints: {
@@ -343,6 +345,74 @@ const sectionSchemas = {
       search: Joi.string().trim().allow("").optional(),
     }),
   },
+
+  
+  // ==================== NEW: FAMILY HISTORY ====================
+  FamilyHistory: {
+    update: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      FamilyHistory: Joi.array()
+        .items(objectId("Family History Item"))
+        .required()
+        .messages({
+          "array.base": "FamilyHistory must be an array",
+          "any.required": "FamilyHistory is required",
+        }),
+      // UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
+
+  // ==================== NEW: HABIT LIFESTYLE ====================
+  HabitLifestyle: {
+    update: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      HabitLifestyle: Joi.array()
+        .items(objectId("Habit Lifestyle Item"))
+        .required()
+        .messages({
+          "array.base": "HabitLifestyle must be an array",
+          "any.required": "HabitLifestyle is required",
+        }),
+      // UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
+
+  // ==================== NEW: ALLERGIES ====================
+  Allergies: {
+    update: Joi.object({
+      CaseFileId: objectId("CaseFileId"),
+      Allergies: Joi.array()
+        .items(objectId("Allergy Item"))
+        .required()
+        .messages({
+          "array.base": "Allergies must be an array",
+          "any.required": "Allergies is required",
+        }),
+      // UpdatedBy: objectId("UpdatedBy"),
+    }),
+    list: Joi.object({
+      CaseFileId: objectId("CaseFileId", false),
+      PatientId: objectId("PatientId", false),
+      page: Joi.number().min(1).optional(),
+      limit: Joi.number().min(1).max(100).optional(),
+      search: Joi.string().trim().allow("").optional(),
+    }),
+  },
+
 };
 
 // Main medical history validation
@@ -355,6 +425,14 @@ const medicalHistorySchema = Joi.object({
   MedicinesPrescribed: medicinesPrescribedSchema.optional(),
   Therapies: Joi.array().items(therapySchema).optional(),
   SurgeriesProcedures: Joi.array().items(surgeryProcedureSchema).optional(),
+  // New Fields
+  FamilyHistory: Joi.array()
+    .items(objectId("Family History Item", false))
+    .optional(),
+  HabitLifestyle: Joi.array()
+    .items(objectId("Habit Lifestyle Item", false))
+    .optional(),
+  Allergies: Joi.array().items(objectId("Allergy Item", false)).optional(),
   Status: Joi.string()
     .valid(
       "Active",
@@ -592,6 +670,40 @@ exports.validateSurgeriesProceduresEditMultiple = [
 ];
 exports.validateSurgeriesProceduresList = [
   validateRequest(sectionSchemas.SurgeriesProcedures.list),
+  validateCaseFile,
+];
+
+
+// ==================== NEW: FAMILY HISTORY VALIDATORS ====================
+exports.validateFamilyHistoryUpdate = [
+  validateRequest(sectionSchemas.FamilyHistory.update),
+  validateCaseFile,
+];
+
+exports.validateFamilyHistoryList = [
+  validateRequest(sectionSchemas.FamilyHistory.list),
+  validateCaseFile,
+];
+
+// ==================== NEW: HABIT LIFESTYLE VALIDATORS ====================
+exports.validateHabitLifestyleUpdate = [
+  validateRequest(sectionSchemas.HabitLifestyle.update),
+  validateCaseFile,
+];
+
+exports.validateHabitLifestyleList = [
+  validateRequest(sectionSchemas.HabitLifestyle.list),
+  validateCaseFile,
+];
+
+// ==================== NEW: ALLERGIES VALIDATORS ====================
+exports.validateAllergiesUpdate = [
+  validateRequest(sectionSchemas.Allergies.update),
+  validateCaseFile,
+];
+
+exports.validateAllergiesList = [
+  validateRequest(sectionSchemas.Allergies.list),
   validateCaseFile,
 ];
 

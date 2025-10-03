@@ -45,6 +45,14 @@ const {
   editSurgeriesProcedures,
   listSurgeriesProcedures,
   updateMedicalHistoryStatus,
+  // new fields controllers
+
+  updateFamilyHistory,
+  listFamilyHistory,
+  updateHabitLifestyle,
+  listHabitLifestyle,
+  updateAllergies,
+  listAllergies,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
@@ -86,6 +94,14 @@ const {
   validateSurgeriesProceduresAddMultiple,
   validateSurgeriesProceduresEditMultiple,
   validateSurgeriesProceduresList,
+
+  // new fields
+  validateFamilyHistoryUpdate,
+  validateFamilyHistoryList,
+  validateHabitLifestyleUpdate,
+  validateHabitLifestyleList,
+  validateAllergiesUpdate,
+  validateAllergiesList,
 } = require("../../middlewares/medicalHistory2.middleware");
 
 // ===================
@@ -258,6 +274,22 @@ router.get(
   listSurgeriesProcedures
 );
 
+// Family History
+router.put("/family-history", validateFamilyHistoryUpdate, updateFamilyHistory);
+router.get("/family-history", listFamilyHistory);
+
+// Habit Lifestyle
+router.put(
+  "/habit-lifestyle",
+  validateHabitLifestyleUpdate,
+  updateHabitLifestyle
+);
+router.get("/habit-lifestyle", listHabitLifestyle);
+
+// Allergies
+router.put("/allergies", validateAllergiesUpdate, updateAllergies);
+router.get("/allergies", listAllergies);
+
 // ===================
 // DELETE SECTION ITEMS
 // ===================
@@ -265,6 +297,8 @@ router.delete("/section/:CaseFileId/:sectionName/:itemId", deleteSectionItem);
 
 // Update Status
 router.put("/status/:id", updateMedicalHistoryStatus);
+
+
 
 
 module.exports = router;

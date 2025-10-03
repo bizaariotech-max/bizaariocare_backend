@@ -1247,3 +1247,7 @@ exports.getAssetMapping = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+
+// new fields
+

@@ -288,6 +288,25 @@ const MedicalHistorySchema = new Schema(
       },
     ],
 
+    FamilyHistory: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    HabitLifestyle: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    Allergies: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+
     // Status to track current state of illness
     // Present illnesses: Active, Ongoing, In-Treatment, Monitoring, Chronic
     // Past illnesses: Resolved, Cured

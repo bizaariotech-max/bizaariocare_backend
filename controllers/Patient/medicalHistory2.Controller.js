@@ -4760,3 +4760,387 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+
+// new fields
+
+// ==================== FAMILY HISTORY ====================
+
+// Update Family History (Replace entire array)
+exports.updateFamilyHistory = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, FamilyHistory, UpdatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      UpdatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.FamilyHistory = FamilyHistory;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "UPDATE_FAMILY_HISTORY",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate("FamilyHistory", "_id lookup_value")
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Family History
+exports.listFamilyHistory = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $unwind: { path: "$FamilyHistory", preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "FamilyHistory",
+          foreignField: "_id",
+          as: "familyHistoryItem",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: "$FamilyHistory",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          FamilyHistoryItem: { $arrayElemAt: ["$familyHistoryItem", 0] },
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+      { $sort: { "FamilyHistoryItem.lookup_value": 1 } },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$FamilyHistory" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== HABIT LIFESTYLE ====================
+
+// Update Habit Lifestyle (Replace entire array)
+exports.updateHabitLifestyle = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, HabitLifestyle, UpdatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      UpdatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.HabitLifestyle = HabitLifestyle;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "UPDATE_HABIT_LIFESTYLE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate("HabitLifestyle", "_id lookup_value")
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Habit Lifestyle
+exports.listHabitLifestyle = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $unwind: { path: "$HabitLifestyle", preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "HabitLifestyle",
+          foreignField: "_id",
+          as: "habitLifestyleItem",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: "$HabitLifestyle",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          HabitLifestyleItem: { $arrayElemAt: ["$habitLifestyleItem", 0] },
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+      { $sort: { "HabitLifestyleItem.lookup_value": 1 } },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$HabitLifestyle" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== ALLERGIES ====================
+
+// Update Allergies (Replace entire array)
+exports.updateAllergies = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const { CaseFileId, Allergies, UpdatedBy } = req.body;
+
+    const medicalHistory = await getOrCreateMedicalHistory(
+      CaseFileId,
+      req.caseFile.PatientId,
+      UpdatedBy,
+      session
+    );
+
+    const oldValue = medicalHistory.toObject();
+    medicalHistory.Allergies = Allergies;
+    medicalHistory.UpdatedBy = UpdatedBy;
+    await medicalHistory.save({ session });
+
+    await __CreateAuditLog(
+      "medical_history",
+      "UPDATE_ALLERGIES",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const populated = await MedicalHistory.findById(medicalHistory._id)
+      .populate("Allergies", "_id lookup_value")
+      .populate("CaseFileId", "CaseFileNumber Date")
+      .populate("PatientId", "Name PatientId");
+
+    return res.json(__requestResponse("200", __SUCCESS, populated));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Allergies
+exports.listAllergies = async (req, res) => {
+  try {
+    const { CaseFileId, PatientId, page = 1, limit = 10 } = req.query;
+
+    const query = { IsDeleted: false };
+    if (CaseFileId) query.CaseFileId = CaseFileId;
+    if (PatientId) query.PatientId = PatientId;
+
+    let pipeline = [
+      { $match: query },
+      { $unwind: { path: "$Allergies", preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Allergies",
+          foreignField: "_id",
+          as: "allergyItem",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_case_files",
+          localField: "CaseFileId",
+          foreignField: "_id",
+          as: "CaseFile",
+          pipeline: [
+            { $project: { _id: 1, TreatmentType: 1, Date: 1, CaseFileNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "patient_masters",
+          localField: "PatientId",
+          foreignField: "_id",
+          as: "Patient",
+          pipeline: [
+            { $project: { _id: 1, Name: 1, PatientId: 1, PhoneNumber: 1 } },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: "$Allergies",
+          medicalHistoryId: "$_id",
+          CaseFileId: "$CaseFileId",
+          PatientId: "$PatientId",
+          AllergyItem: { $arrayElemAt: ["$allergyItem", 0] },
+          CaseFile: 1,
+          Patient: 1,
+        },
+      },
+      { $sort: { "AllergyItem.lookup_value": 1 } },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ];
+
+    const results = await MedicalHistory.aggregate(pipeline);
+
+    const total = await MedicalHistory.aggregate([
+      { $match: query },
+      { $unwind: "$Allergies" },
+      { $count: "total" },
+    ]);
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total: total[0]?.total || 0,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil((total[0]?.total || 0) / limit),
+        list: __deepClone(results),
+      })
+    );
+  } catch (error) {
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
