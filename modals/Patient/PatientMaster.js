@@ -236,6 +236,33 @@ const PatientMasterSchema = new Schema(
       type: String,
       default: "",
     },
+    // new fields
+
+    FamilyHistory: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+
+    HabitLifestyle: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    Allergies: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    PastAccidentsTrauma: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
 
     QRCode: {
       type: String,
@@ -279,42 +306,47 @@ PatientMasterSchema.index({ InsuranceProvider: 1 });
 
 // Update the compound unique index for PhoneNumber
 PatientMasterSchema.index(
-  { 
+  {
     PhoneNumber: 1,
-    IsDeleted: 1 
+    IsDeleted: 1,
   },
   {
     unique: true,
     partialFilterExpression: { IsDeleted: false },
-    collation: { locale: "en", strength: 2 }
+    collation: { locale: "en", strength: 2 },
   }
 );
 
 // Update the error handler for duplicate phone numbers
-PatientMasterSchema.post(['save', 'updateOne', 'findOneAndUpdate'], function(error, doc, next) {
-  if (error.code === 11000) {
-    if (error.keyPattern.PhoneNumber) {
-      next(new Error('Phone number already exists for another active patient'));
+PatientMasterSchema.post(
+  ["save", "updateOne", "findOneAndUpdate"],
+  function (error, doc, next) {
+    if (error.code === 11000) {
+      if (error.keyPattern.PhoneNumber) {
+        next(
+          new Error("Phone number already exists for another active patient")
+        );
+      } else {
+        next(new Error("Duplicate key error"));
+      }
     } else {
-      next(new Error('Duplicate key error'));
+      next(error);
     }
-  } else {
-    next(error);
   }
-});
+);
 
 // Add pre-validate middleware to ensure phone number format
-PatientMasterSchema.pre('validate', async function(next) {
-  if (this.isModified('PhoneNumber')) {
+PatientMasterSchema.pre("validate", async function (next) {
+  if (this.isModified("PhoneNumber")) {
     // Check if phone number exists for another active patient
     const existingPatient = await this.constructor.findOne({
       PhoneNumber: this.PhoneNumber,
       IsDeleted: false,
-      _id: { $ne: this._id }
+      _id: { $ne: this._id },
     });
 
     if (existingPatient) {
-      next(new Error('Phone number already exists for another active patient'));
+      next(new Error("Phone number already exists for another active patient"));
     }
   }
   next();

@@ -14,6 +14,18 @@ const {
   updateVerificationStatus,
   getPatientByPhoneNumber,
   getPatientDetailsByQRScan,
+  addFamilyHistory,
+  removeFamilyHistory,
+  listFamilyHistory,
+  addHabitLifestyle,
+  listHabitLifestyle,
+  removeHabitLifestyle,
+  addAllergy,
+  removeAllergy,
+  listAllergies,
+  addPastAccidentsTrauma,
+  removePastAccidentsTrauma,
+  listPastAccidentsTrauma,
 } = require("../../controllers/Patient/patientMaster.Controller");
 
 const {
@@ -58,6 +70,31 @@ router.put("/updateVerificationStatus/:id", updateVerificationStatus);
 
 //getPatientByPhoneNumber
 router.get("/getPatientbyphonenumber/:PhoneNumber", getPatientByPhoneNumber);
+
+// new apis
+
+// ==================== FAMILY HISTORY ROUTES ====================
+router.post("/patient/family-history/add", addFamilyHistory);
+router.post("/patient/family-history/remove", removeFamilyHistory);
+router.get("/patient/family-history/list", listFamilyHistory);
+
+// ==================== HABIT LIFESTYLE ROUTES ====================
+router.post("/patient/habit-lifestyle/add", addHabitLifestyle);
+router.post("/patient/habit-lifestyle/remove", removeHabitLifestyle);
+router.get("/patient/habit-lifestyle/list", listHabitLifestyle);
+
+// ==================== ALLERGIES ROUTES ====================
+router.post("/patient/allergy/add", addAllergy);
+router.post("/patient/allergy/remove", removeAllergy);
+router.get("/patient/allergy/list", listAllergies);
+
+// ==================== PAST ACCIDENTS TRAUMA ROUTES ====================
+router.post("/patient/past-accidents-trauma/add", addPastAccidentsTrauma);
+router.post("/patient/past-accidents-trauma/remove", removePastAccidentsTrauma);
+router.get("/patient/past-accidents-trauma/list", listPastAccidentsTrauma);
+
+
+
 
 // QR
 //  NO AUTHENTICATION REQUIRED (Public)

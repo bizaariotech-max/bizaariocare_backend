@@ -47,12 +47,12 @@ const {
   updateMedicalHistoryStatus,
   // new fields controllers
 
-  updateFamilyHistory,
-  listFamilyHistory,
-  updateHabitLifestyle,
-  listHabitLifestyle,
-  updateAllergies,
-  listAllergies,
+  // updateFamilyHistory,
+  // listFamilyHistory,
+  // updateHabitLifestyle,
+  // listHabitLifestyle,
+  // updateAllergies,
+  // listAllergies,
 } = require("../../controllers/Patient/medicalHistory2.Controller");
 
 const {
@@ -96,12 +96,12 @@ const {
   validateSurgeriesProceduresList,
 
   // new fields
-  validateFamilyHistoryUpdate,
-  validateFamilyHistoryList,
-  validateHabitLifestyleUpdate,
-  validateHabitLifestyleList,
-  validateAllergiesUpdate,
-  validateAllergiesList,
+  // validateFamilyHistoryUpdate,
+  // validateFamilyHistoryList,
+  // validateHabitLifestyleUpdate,
+  // validateHabitLifestyleList,
+  // validateAllergiesUpdate,
+  // validateAllergiesList,
 } = require("../../middlewares/medicalHistory2.middleware");
 
 // ===================
@@ -274,21 +274,21 @@ router.get(
   listSurgeriesProcedures
 );
 
-// Family History
-router.put("/family-history", validateFamilyHistoryUpdate, updateFamilyHistory);
-router.get("/family-history", listFamilyHistory);
+// // Family History
+// router.put("/family-history", validateFamilyHistoryUpdate, updateFamilyHistory);
+// router.get("/family-history", listFamilyHistory);
 
-// Habit Lifestyle
-router.put(
-  "/habit-lifestyle",
-  validateHabitLifestyleUpdate,
-  updateHabitLifestyle
-);
-router.get("/habit-lifestyle", listHabitLifestyle);
+// // Habit Lifestyle
+// router.put(
+//   "/habit-lifestyle",
+//   validateHabitLifestyleUpdate,
+//   updateHabitLifestyle
+// );
+// router.get("/habit-lifestyle", listHabitLifestyle);
 
-// Allergies
-router.put("/allergies", validateAllergiesUpdate, updateAllergies);
-router.get("/allergies", listAllergies);
+// // Allergies
+// router.put("/allergies", validateAllergiesUpdate, updateAllergies);
+// router.get("/allergies", listAllergies);
 
 // ===================
 // DELETE SECTION ITEMS

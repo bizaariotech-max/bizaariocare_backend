@@ -833,3 +833,463 @@ exports.getPatientByPhoneNumber = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+// ==================== FAMILY HISTORY APIs ====================
+
+// Add Family History Item
+exports.addFamilyHistory = async (req, res) => {
+  try {
+    const { PatientId, FamilyHistoryItem } = req.body;
+
+    if (!PatientId || !FamilyHistoryItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and FamilyHistoryItem are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if item already exists in array
+    if (patient.FamilyHistory.includes(FamilyHistoryItem)) {
+      return res.json(
+        __requestResponse("400", "Family history item already exists")
+      );
+    }
+
+    // Add item to array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { FamilyHistory: FamilyHistoryItem } },
+      { new: true, runValidators: true }
+    ).populate("FamilyHistory", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.FamilyHistory));
+  } catch (error) {
+    console.error("Add Family History Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Family History Item
+exports.removeFamilyHistory = async (req, res) => {
+  try {
+    const { PatientId, FamilyHistoryItem } = req.body;
+
+    if (!PatientId || !FamilyHistoryItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and FamilyHistoryItem are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove item from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { FamilyHistory: FamilyHistoryItem } },
+      { new: true, runValidators: true }
+    ).populate("FamilyHistory", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.FamilyHistory));
+  } catch (error) {
+    console.error("Remove Family History Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Family History
+exports.listFamilyHistory = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("FamilyHistory")
+      .populate("FamilyHistory", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.FamilyHistory));
+  } catch (error) {
+    console.error("List Family History Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== HABIT LIFESTYLE APIs ====================
+
+// Add Habit Lifestyle Item
+exports.addHabitLifestyle = async (req, res) => {
+  try {
+    const { PatientId, HabitLifestyleItem } = req.body;
+
+    if (!PatientId || !HabitLifestyleItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and HabitLifestyleItem are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if item already exists in array
+    if (patient.HabitLifestyle.includes(HabitLifestyleItem)) {
+      return res.json(
+        __requestResponse("400", "Habit lifestyle item already exists")
+      );
+    }
+
+    // Add item to array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { HabitLifestyle: HabitLifestyleItem } },
+      { new: true, runValidators: true }
+    ).populate("HabitLifestyle", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.HabitLifestyle));
+  } catch (error) {
+    console.error("Add Habit Lifestyle Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Habit Lifestyle Item
+exports.removeHabitLifestyle = async (req, res) => {
+  try {
+    const { PatientId, HabitLifestyleItem } = req.body;
+
+    if (!PatientId || !HabitLifestyleItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and HabitLifestyleItem are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove item from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { HabitLifestyle: HabitLifestyleItem } },
+      { new: true, runValidators: true }
+    ).populate("HabitLifestyle", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.HabitLifestyle));
+  } catch (error) {
+    console.error("Remove Habit Lifestyle Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Habit Lifestyle
+exports.listHabitLifestyle = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("HabitLifestyle")
+      .populate("HabitLifestyle", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.HabitLifestyle));
+  } catch (error) {
+    console.error("List Habit Lifestyle Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== ALLERGIES APIs ====================
+
+// Add Allergy Item
+exports.addAllergy = async (req, res) => {
+  try {
+    const { PatientId, AllergyItem } = req.body;
+
+    if (!PatientId || !AllergyItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and AllergyItem are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if item already exists in array
+    if (patient.Allergies.includes(AllergyItem)) {
+      return res.json(
+        __requestResponse("400", "Allergy item already exists")
+      );
+    }
+
+    // Add item to array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { Allergies: AllergyItem } },
+      { new: true, runValidators: true }
+    ).populate("Allergies", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.Allergies));
+  } catch (error) {
+    console.error("Add Allergy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Allergy Item
+exports.removeAllergy = async (req, res) => {
+  try {
+    const { PatientId, AllergyItem } = req.body;
+
+    if (!PatientId || !AllergyItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and AllergyItem are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove item from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { Allergies: AllergyItem } },
+      { new: true, runValidators: true }
+    ).populate("Allergies", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.Allergies));
+  } catch (error) {
+    console.error("Remove Allergy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Allergies
+exports.listAllergies = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("Allergies")
+      .populate("Allergies", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.Allergies));
+  } catch (error) {
+    console.error("List Allergies Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== PAST ACCIDENTS TRAUMA APIs ====================
+
+// Add Past Accidents Trauma Item
+exports.addPastAccidentsTrauma = async (req, res) => {
+  try {
+    const { PatientId, PastAccidentsTraumaItem } = req.body;
+
+    if (!PatientId || !PastAccidentsTraumaItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and PastAccidentsTraumaItem are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if item already exists in array
+    if (patient.PastAccidentsTrauma.includes(PastAccidentsTraumaItem)) {
+      return res.json(
+        __requestResponse("400", "Past accidents trauma item already exists")
+      );
+    }
+
+    // Add item to array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { PastAccidentsTrauma: PastAccidentsTraumaItem } },
+      { new: true, runValidators: true }
+    ).populate("PastAccidentsTrauma", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.PastAccidentsTrauma));
+  } catch (error) {
+    console.error("Add Past Accidents Trauma Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Past Accidents Trauma Item
+exports.removePastAccidentsTrauma = async (req, res) => {
+  try {
+    const { PatientId, PastAccidentsTraumaItem } = req.body;
+
+    if (!PatientId || !PastAccidentsTraumaItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and PastAccidentsTraumaItem are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove item from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { PastAccidentsTrauma: PastAccidentsTraumaItem } },
+      { new: true, runValidators: true }
+    ).populate("PastAccidentsTrauma", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.PastAccidentsTrauma));
+  } catch (error) {
+    console.error("Remove Past Accidents Trauma Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Past Accidents Trauma
+exports.listPastAccidentsTrauma = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("PastAccidentsTrauma")
+      .populate("PastAccidentsTrauma", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.PastAccidentsTrauma));
+  } catch (error) {
+    console.error("List Past Accidents Trauma Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};

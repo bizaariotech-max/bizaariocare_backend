@@ -3922,6 +3922,34 @@ exports.getMedicalHistoryById = async (req, res) => {
           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
         },
       },
+      // Lookup FamilyHistory, HabitLifestyle, and Allergies - using temporary field names
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "FamilyHistory",
+          foreignField: "_id",
+          as: "familyHistoryLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "HabitLifestyle",
+          foreignField: "_id",
+          as: "habitLifestyleLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "admin_lookups",
+          localField: "Allergies",
+          foreignField: "_id",
+          as: "allergiesLookups",
+          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
+        },
+      },
 
       // Apply same population logic as list API
       {
@@ -4231,6 +4259,10 @@ exports.getMedicalHistoryById = async (req, res) => {
               },
             },
           },
+          // Properly populate FamilyHistory, HabitLifestyle, and Allergies
+          FamilyHistory: "$familyHistoryLookups",
+          HabitLifestyle: "$habitLifestyleLookups",
+          Allergies: "$allergiesLookups",
         },
       },
 
@@ -4255,6 +4287,9 @@ exports.getMedicalHistoryById = async (req, res) => {
           surgeryProcedureNameLookups: 0,
           surgeryRecoveryUnitLookups: 0,
           surgeryComplicationLookups: 0,
+          familyHistoryLookups: 0,
+          habitLifestyleLookups: 0,
+          allergiesLookups: 0,
         },
       },
     ];

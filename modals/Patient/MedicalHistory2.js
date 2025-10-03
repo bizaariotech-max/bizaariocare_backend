@@ -148,25 +148,6 @@ const MedicalHistorySchema = new Schema(
     Therapies: [TherapySchema],
     SurgeriesProcedures: [SurgeryProcedureSchema],
 
-    FamilyHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "admin_lookups",
-      },
-    ],
-    HabitLifestyle: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "admin_lookups",
-      },
-    ],
-    Allergies: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "admin_lookups",
-      },
-    ],
-
     Status: {
       type: String,
       enum: [
