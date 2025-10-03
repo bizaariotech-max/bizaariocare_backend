@@ -535,7 +535,7 @@ exports.getMedicalSpecialties = async (req, res) => {
     const { AssetId } = req.params;
 
     const asset = await Asset.findById(AssetId)
-      .select("MedicalSpecialties")
+      .select("MedicalSpecialties Specialization")
       .populate("MedicalSpecialties", "lookup_value");
 
     if (!asset) {
