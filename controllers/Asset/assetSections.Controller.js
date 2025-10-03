@@ -403,7 +403,7 @@ exports.getAssetProfile = async (req, res) => {
     const { AssetId } = req.params;
 
     const asset = await Asset.findById(AssetId).select(
-      "ShortDescription LongDescription ProfilePicture Logo PictureGallery VideoGallery ProfilePDF VideoBio"
+      "ShortDescription LongDescription ProfilePicture Logo PictureGallery VideoGallery ProfilePDF VideoBio Fellowships NoofSurgeriesPerformed NoofSatisfiedPatients NoofArticlesPublished NoofLecturesDelivered"
     );
 
     if (!asset) {
