@@ -3922,34 +3922,6 @@ exports.getMedicalHistoryById = async (req, res) => {
           pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
         },
       },
-      // Lookup FamilyHistory, HabitLifestyle, and Allergies - using temporary field names
-      {
-        $lookup: {
-          from: "admin_lookups",
-          localField: "FamilyHistory",
-          foreignField: "_id",
-          as: "familyHistoryLookups",
-          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-        },
-      },
-      {
-        $lookup: {
-          from: "admin_lookups",
-          localField: "HabitLifestyle",
-          foreignField: "_id",
-          as: "habitLifestyleLookups",
-          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-        },
-      },
-      {
-        $lookup: {
-          from: "admin_lookups",
-          localField: "Allergies",
-          foreignField: "_id",
-          as: "allergiesLookups",
-          pipeline: [{ $project: { _id: 1, lookup_value: 1 } }],
-        },
-      },
 
       // Apply same population logic as list API
       {
@@ -4259,10 +4231,6 @@ exports.getMedicalHistoryById = async (req, res) => {
               },
             },
           },
-          // Properly populate FamilyHistory, HabitLifestyle, and Allergies
-          FamilyHistory: "$familyHistoryLookups",
-          HabitLifestyle: "$habitLifestyleLookups",
-          Allergies: "$allergiesLookups",
         },
       },
 
@@ -4287,9 +4255,6 @@ exports.getMedicalHistoryById = async (req, res) => {
           surgeryProcedureNameLookups: 0,
           surgeryRecoveryUnitLookups: 0,
           surgeryComplicationLookups: 0,
-          familyHistoryLookups: 0,
-          habitLifestyleLookups: 0,
-          allergiesLookups: 0,
         },
       },
     ];
@@ -4711,7 +4676,7 @@ exports.deleteSectionItem = async (req, res) => {
       // "DELETE_SECTION_ITEM",
       "DELETE",
       null,
-      
+
       sectionName,
       oldValue,
       medicalHistory.toObject(),
@@ -4800,7 +4765,6 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
-
 
 // ==================== FAMILY HISTORY ====================
 
@@ -5300,14 +5264,13 @@ exports.listAllergies = async (req, res) => {
   }
 };
 
-
 // // new fields
 // // ==================== FAMILY HISTORY ====================
 // // Update Family History (Replace entire array)
 // exports.updateFamilyHistory = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
-  
+
 //   try {
 //     const { CaseFileId, FamilyHistory, UpdatedBy } = req.body;
 
@@ -5345,7 +5308,7 @@ exports.listAllergies = async (req, res) => {
 // exports.updateHabitLifestyle = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
-  
+
 //   try {
 //     const { CaseFileId, HabitLifestyle, UpdatedBy } = req.body;
 
@@ -5383,7 +5346,7 @@ exports.listAllergies = async (req, res) => {
 // exports.updateAllergies = async (req, res) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
-  
+
 //   try {
 //     const { CaseFileId, Allergies, UpdatedBy } = req.body;
 
