@@ -43,6 +43,10 @@ const {
   addPastAccidentsTrauma,
   removePastAccidentsTrauma,
   listPastAccidentsTrauma,
+  editCurrentMedications,
+  addMedicine,
+  editMedicine,
+  deleteMedicine,
 } = require("../../controllers/Patient/patientMaster.Controller");
 
 const {
@@ -97,8 +101,14 @@ router.get("/patient/pre-existing-disease/list", listPreExistingDisease);
 
 // ==================== CURRENT MEDICATIONS ROUTES ====================
 router.post("/patient/current-medications/add", addCurrentMedications);
+router.post("/patient/current-medications/edit", editCurrentMedications);
 router.post("/patient/current-medications/remove", removeCurrentMedications);
 router.get("/patient/current-medications/list", listCurrentMedications);
+
+// Individual Medicine Management
+router.post("/patient/current-medications/medicine/add", addMedicine);
+router.post("/patient/current-medications/medicine/edit", editMedicine);
+router.post("/patient/current-medications/medicine/delete", deleteMedicine);
 
 // ==================== CURRENT THERAPIES ROUTES ====================
 router.post("/patient/current-therapy/add", addCurrentTherapy);
