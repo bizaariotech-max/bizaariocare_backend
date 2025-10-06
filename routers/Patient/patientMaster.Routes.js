@@ -47,6 +47,8 @@ const {
   addMedicine,
   editMedicine,
   deleteMedicine,
+  addCurrentTherapies,
+  editCurrentTherapies,
 } = require("../../controllers/Patient/patientMaster.Controller");
 
 const {
@@ -111,10 +113,14 @@ router.post("/patient/current-medications/medicine/edit", editMedicine);
 router.post("/patient/current-medications/medicine/delete", deleteMedicine);
 
 // ==================== CURRENT THERAPIES ROUTES ====================
-router.post("/patient/current-therapy/add", addCurrentTherapy);
+router.post("/patient/current-therapy/add-single", addCurrentTherapy);
+router.post("/patient/current-therapy/add", addCurrentTherapies);
+router.post("/patient/current-therapy/edit", editCurrentTherapies);
+
 router.put("/patient/current-therapy/update", updateCurrentTherapy);
 router.post("/patient/current-therapy/remove", removeCurrentTherapy);
 router.get("/patient/current-therapies/list", listCurrentTherapies);
+
 
 // ==================== FAMILY HISTORY ROUTES ====================
 router.post("/patient/family-history/add", addFamilyHistory);

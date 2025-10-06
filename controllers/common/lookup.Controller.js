@@ -15,7 +15,7 @@ const LookupMaster = require ("../../modals/Common/lookupmodel.js");
 const AssetMaster = require("../../modals/AssetMaster/AssetMaster.js");
 
 // * LookupList (legacy API)
-const lookupList = async (req, res) => {
+const lookupList_Old = async (req, res) => {
   console.log(req.body);
   console.log("api common lookup list");
   try {
@@ -50,6 +50,84 @@ const lookupList = async (req, res) => {
       }),
       is_active: true,
     })
+      .populate("parent_lookup_id", "lookup_value")
+      .lean();
+
+    if (list.length == 0) {
+      return res.json(__requestResponse("404", "No Data found"));
+    }
+
+    const transformedList = list.map((item) => ({
+      ...item,
+      parent_lookup_name: item?.parent_lookup_id?.lookup_value || "",
+      parent_lookup_id: item?.parent_lookup_id?._id || "",
+    }));
+
+    return res.json(__requestResponse("200", __SUCCESS, transformedList));
+
+    // return res.json(__requestResponse("200", __SUCCESS, list));
+  } catch (error) {
+    return res.json(__requestResponse("500", error.message));
+  }
+};
+
+// * LookupList (legacy API) --new api with filtering for disease_master
+const lookupList = async (req, res) => {
+  console.log(req.body);
+  console.log("api common lookup list");
+  try {
+    if (!req?.body?.lookup_type || req?.body?.lookup_type.length === 0) {
+      return res.json(__requestResponse("400", "Lookup type is required"));
+    }
+
+    if (req?.body?.lookup_type[0] === "asset_list") {
+      // console.warn("kk");
+
+      const assets = await AssetMaster.find();
+      console.warn(assets, "assets");
+      if (assets.length === 0) {
+        return res.json(__requestResponse("404", "No Data found"));
+      }
+      return res.json(
+        __requestResponse(
+          "200",
+          __SUCCESS,
+          assets.map((item) => ({
+            lookup_value: item?.AssetName,
+            _id: item._id,
+          }))
+        )
+      );
+    }
+
+    // Build query object
+    let query = {
+      lookup_type: { $in: req?.body?.lookup_type || [] },
+      ...(mongoose.Types.ObjectId.isValid(req.body?.parent_lookup_id) && {
+        parent_lookup_id: mongoose.Types.ObjectId(req.body?.parent_lookup_id),
+      }),
+      is_active: true,
+    };
+
+    // Add disease master filtering if lookup_type is disease_master and filters are provided
+    if (req?.body?.lookup_type.includes("disease_master")) {
+      const { is_genetic_disorders, is_communicable_disease, is_recurring_disease } = req.body;
+      
+      // Add filters for disease master based on 'other' field
+      if (is_genetic_disorders !== undefined) {
+        query["other.is_genetic_disorders"] = is_genetic_disorders;
+      }
+      
+      if (is_communicable_disease !== undefined) {
+        query["other.is_communicable_disease"] = is_communicable_disease;
+      }
+      
+      if (is_recurring_disease !== undefined) {
+        query["other.is_recurring_disease"] = is_recurring_disease;
+      }
+    }
+
+    const list = await LookupMaster.find(query)
       .populate("parent_lookup_id", "lookup_value")
       .lean();
 

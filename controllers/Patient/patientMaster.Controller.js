@@ -1787,7 +1787,7 @@ exports.listCurrentMedications = async (req, res) => {
 
 // ==================== CURRENT THERAPIES APIs ====================
 
-// Add Current Therapy
+// Add Single Current Therapy
 exports.addCurrentTherapy = async (req, res) => {
   try {
     const { PatientId, TherapyName, PatientResponse } = req.body;
@@ -1803,6 +1803,9 @@ exports.addCurrentTherapy = async (req, res) => {
     if (!patient) {
       return res.json(__requestResponse("404", "Patient not found"));
     }
+
+    // Get old value for audit
+    const oldValue = patient.toObject();
 
     // Check if therapy already exists
     const existingTherapy = patient.CurrentTherapies.find(
@@ -1821,30 +1824,228 @@ exports.addCurrentTherapy = async (req, res) => {
       PatientResponse: PatientResponse || ""
     };
 
-    const updatedPatient = await PatientMaster.findByIdAndUpdate(
-      PatientId,
-      { $push: { CurrentTherapies: newTherapy } },
-      { new: true, runValidators: true }
-    ).populate("CurrentTherapies.TherapyName", "lookup_value");
+    patient.CurrentTherapies.push(newTherapy);
+    await patient.save();
 
     // Create audit log
     await __CreateAuditLog(
       "patient_master",
-      "UPDATE",
+      "ADD_CURRENT_THERAPY",
       null,
+      oldValue,
       patient.toObject(),
-      updatedPatient.toObject(),
-      updatedPatient._id
+      patient._id
     );
 
-    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.CurrentTherapies));
+    // Populate and return
+    const populatedPatient = await PatientMaster.findById(PatientId)
+      .select("CurrentTherapies")
+      .populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    return res.json(__requestResponse("200", __SUCCESS, populatedPatient.CurrentTherapies));
   } catch (error) {
     console.error("Add Current Therapy Error:", error.message);
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
-// Update Current Therapy
+// Add Multiple Current Therapies
+exports.addCurrentTherapies = async (req, res) => {
+  try {
+    const { PatientId, Therapies } = req.body;
+
+    if (!PatientId || !Therapies || !Array.isArray(Therapies) || Therapies.length === 0) {
+      return res.json(
+        __requestResponse("400", "PatientId and Therapies array are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Get old value for audit
+    const oldValue = patient.toObject();
+
+    // Validate and add each therapy
+    const existingTherapyNames = patient.CurrentTherapies.map(
+      therapy => therapy.TherapyName?.toString()
+    ).filter(Boolean);
+
+    const newTherapies = [];
+    const duplicateTherapies = [];
+
+    Therapies.forEach((therapy) => {
+      if (!therapy.TherapyName) {
+        return; // Skip invalid therapies
+      }
+
+      if (existingTherapyNames.includes(therapy.TherapyName.toString())) {
+        duplicateTherapies.push(therapy.TherapyName);
+      } else {
+        newTherapies.push({
+          TherapyName: therapy.TherapyName,
+          PatientResponse: therapy.PatientResponse || ""
+        });
+        existingTherapyNames.push(therapy.TherapyName.toString());
+      }
+    });
+
+    if (newTherapies.length === 0) {
+      return res.json(
+        __requestResponse("400", `All therapies already exist. Duplicates: ${duplicateTherapies.length}`)
+      );
+    }
+
+    // Add all new therapies
+    newTherapies.forEach((therapy) => {
+      patient.CurrentTherapies.push(therapy);
+    });
+
+    await patient.save();
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "ADD_CURRENT_THERAPIES",
+      null,
+      oldValue,
+      patient.toObject(),
+      patient._id
+    );
+
+    // Populate and return
+    const populatedPatient = await PatientMaster.findById(PatientId)
+      .select("CurrentTherapies")
+      .populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    const response = {
+      addedTherapies: newTherapies.length,
+      duplicateTherapies: duplicateTherapies.length,
+      totalTherapies: populatedPatient.CurrentTherapies.length,
+      therapies: populatedPatient.CurrentTherapies
+    };
+
+    return res.json(__requestResponse("200", __SUCCESS, response));
+  } catch (error) {
+    console.error("Add Current Therapies Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit Single Current Therapy
+exports.editCurrentTherapy = async (req, res) => {
+  try {
+    const { PatientId, TherapyId, TherapyName, PatientResponse } = req.body;
+
+    if (!PatientId || !TherapyId) {
+      return res.json(
+        __requestResponse("400", "PatientId and TherapyId are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    const oldValue = oldPatient.toObject();
+
+    // Find and update specific therapy
+    const therapyIndex = oldPatient.CurrentTherapies.findIndex(
+      therapy => therapy._id.toString() === TherapyId.toString()
+    );
+
+    if (therapyIndex === -1) {
+      return res.json(__requestResponse("404", "Therapy not found"));
+    }
+
+    // Update therapy fields
+    if (TherapyName !== undefined) {
+      oldPatient.CurrentTherapies[therapyIndex].TherapyName = TherapyName;
+    }
+    if (PatientResponse !== undefined) {
+      oldPatient.CurrentTherapies[therapyIndex].PatientResponse = PatientResponse;
+    }
+
+    await oldPatient.save();
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "EDIT_CURRENT_THERAPY",
+      null,
+      oldValue,
+      oldPatient.toObject(),
+      oldPatient._id
+    );
+
+    // Populate and return
+    const populatedPatient = await PatientMaster.findById(PatientId)
+      .select("CurrentTherapies")
+      .populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    return res.json(__requestResponse("200", __SUCCESS, populatedPatient.CurrentTherapies));
+  } catch (error) {
+    console.error("Edit Current Therapy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Edit Multiple Current Therapies (Replace All)
+exports.editCurrentTherapies = async (req, res) => {
+  try {
+    const { PatientId, Therapies } = req.body;
+
+    if (!PatientId || !Therapies || !Array.isArray(Therapies)) {
+      return res.json(
+        __requestResponse("400", "PatientId and Therapies array are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Get old value for audit
+    const oldValue = patient.toObject();
+
+    // Replace all therapies
+    patient.CurrentTherapies = Therapies.map(therapy => ({
+      TherapyName: therapy.TherapyName,
+      PatientResponse: therapy.PatientResponse || ""
+    }));
+
+    await patient.save();
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "EDIT_CURRENT_THERAPIES",
+      null,
+      oldValue,
+      patient.toObject(),
+      patient._id
+    );
+
+    // Populate and return
+    const populatedPatient = await PatientMaster.findById(PatientId)
+      .select("CurrentTherapies")
+      .populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    return res.json(__requestResponse("200", __SUCCESS, populatedPatient.CurrentTherapies));
+  } catch (error) {
+    console.error("Edit Current Therapies Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Update Current Therapy (legacy - keeping for backward compatibility)
 exports.updateCurrentTherapy = async (req, res) => {
   try {
     const { PatientId, TherapyId, PatientResponse } = req.body;
@@ -1882,7 +2083,7 @@ exports.updateCurrentTherapy = async (req, res) => {
     // Create audit log
     await __CreateAuditLog(
       "patient_master",
-      "UPDATE",
+      "UPDATE_CURRENT_THERAPY",
       null,
       oldPatient.toObject(),
       updatedPatient.toObject(),
@@ -1923,7 +2124,7 @@ exports.removeCurrentTherapy = async (req, res) => {
     // Create audit log
     await __CreateAuditLog(
       "patient_master",
-      "UPDATE",
+      "REMOVE_CURRENT_THERAPY",
       null,
       oldPatient.toObject(),
       updatedPatient.toObject(),
