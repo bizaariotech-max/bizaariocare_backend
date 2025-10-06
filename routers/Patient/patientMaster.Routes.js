@@ -14,15 +14,32 @@ const {
   updateVerificationStatus,
   getPatientByPhoneNumber,
   getPatientDetailsByQRScan,
+  // Pre-existing Disease
+  addPreExistingDisease,
+  removePreExistingDisease,
+  listPreExistingDisease,
+  // Current Medications
+  addCurrentMedications,
+  removeCurrentMedications,
+  listCurrentMedications,
+  // Current Therapies
+  addCurrentTherapy,
+  updateCurrentTherapy,
+  removeCurrentTherapy,
+  listCurrentTherapies,
+  // Family History
   addFamilyHistory,
   removeFamilyHistory,
   listFamilyHistory,
+  // Habit Lifestyle
   addHabitLifestyle,
-  listHabitLifestyle,
   removeHabitLifestyle,
+  listHabitLifestyle,
+  // Allergies
   addAllergy,
   removeAllergy,
   listAllergies,
+  // Past Accidents Trauma
   addPastAccidentsTrauma,
   removePastAccidentsTrauma,
   listPastAccidentsTrauma,
@@ -72,6 +89,22 @@ router.put("/updateVerificationStatus/:id", updateVerificationStatus);
 router.get("/getPatientbyphonenumber/:PhoneNumber", getPatientByPhoneNumber);
 
 // new apis
+
+// ==================== PRE-EXISTING DISEASE ROUTES ====================
+router.post("/patient/pre-existing-disease/add", addPreExistingDisease);
+router.post("/patient/pre-existing-disease/remove", removePreExistingDisease);
+router.get("/patient/pre-existing-disease/list", listPreExistingDisease);
+
+// ==================== CURRENT MEDICATIONS ROUTES ====================
+router.post("/patient/current-medications/add", addCurrentMedications);
+router.post("/patient/current-medications/remove", removeCurrentMedications);
+router.get("/patient/current-medications/list", listCurrentMedications);
+
+// ==================== CURRENT THERAPIES ROUTES ====================
+router.post("/patient/current-therapy/add", addCurrentTherapy);
+router.put("/patient/current-therapy/update", updateCurrentTherapy);
+router.post("/patient/current-therapy/remove", removeCurrentTherapy);
+router.get("/patient/current-therapies/list", listCurrentTherapies);
 
 // ==================== FAMILY HISTORY ROUTES ====================
 router.post("/patient/family-history/add", addFamilyHistory);

@@ -1293,3 +1293,415 @@ exports.listPastAccidentsTrauma = async (req, res) => {
     return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
+
+// ==================== PRE-EXISTING DISEASE APIs ====================
+
+// Add Pre-Existing Disease Item
+exports.addPreExistingDisease = async (req, res) => {
+  try {
+    const { PatientId, PreExistingDiseaseItem } = req.body;
+
+    if (!PatientId || !PreExistingDiseaseItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and PreExistingDiseaseItem are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if item already exists in array
+    if (patient.PreExistingDisease.includes(PreExistingDiseaseItem)) {
+      return res.json(
+        __requestResponse("400", "Pre-existing disease item already exists")
+      );
+    }
+
+    // Add item to array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { PreExistingDisease: PreExistingDiseaseItem } },
+      { new: true, runValidators: true }
+    ).populate("PreExistingDisease", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.PreExistingDisease));
+  } catch (error) {
+    console.error("Add Pre-Existing Disease Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Pre-Existing Disease Item
+exports.removePreExistingDisease = async (req, res) => {
+  try {
+    const { PatientId, PreExistingDiseaseItem } = req.body;
+
+    if (!PatientId || !PreExistingDiseaseItem) {
+      return res.json(
+        __requestResponse("400", "PatientId and PreExistingDiseaseItem are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove item from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { PreExistingDisease: PreExistingDiseaseItem } },
+      { new: true, runValidators: true }
+    ).populate("PreExistingDisease", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.PreExistingDisease));
+  } catch (error) {
+    console.error("Remove Pre-Existing Disease Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Pre-Existing Disease
+exports.listPreExistingDisease = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("PreExistingDisease")
+      .populate("PreExistingDisease", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.PreExistingDisease));
+  } catch (error) {
+    console.error("List Pre-Existing Disease Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== CURRENT MEDICATIONS APIs ====================
+
+// Add/Update Current Medications
+exports.addCurrentMedications = async (req, res) => {
+  try {
+    const { PatientId, CurrentMedications } = req.body;
+
+    if (!PatientId || !CurrentMedications) {
+      return res.json(
+        __requestResponse("400", "PatientId and CurrentMedications are required")
+      );
+    }
+
+    // Validate CurrentMedications structure
+    if (!CurrentMedications.Medicines || !Array.isArray(CurrentMedications.Medicines)) {
+      return res.json(
+        __requestResponse("400", "CurrentMedications must contain Medicines array")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Update current medications (replace entire object)
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { CurrentMedications: CurrentMedications },
+      { new: true, runValidators: true }
+    ).populate([
+      { path: "CurrentMedications.Medicines.MedicineName", select: "lookup_value" },
+      { path: "CurrentMedications.Medicines.Dosage", select: "lookup_value" },
+      { path: "CurrentMedications.RecoveryCycle.Unit", select: "lookup_value" }
+    ]);
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.CurrentMedications));
+  } catch (error) {
+    console.error("Add Current Medications Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Current Medications
+exports.removeCurrentMedications = async (req, res) => {
+  try {
+    const { PatientId } = req.body;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove current medications
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $unset: { CurrentMedications: "" } },
+      { new: true, runValidators: true }
+    );
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, "Current medications removed successfully"));
+  } catch (error) {
+    console.error("Remove Current Medications Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Current Medications
+exports.listCurrentMedications = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("CurrentMedications")
+      .populate([
+        { path: "CurrentMedications.Medicines.MedicineName", select: "lookup_value" },
+        { path: "CurrentMedications.Medicines.Dosage", select: "lookup_value" },
+        { path: "CurrentMedications.RecoveryCycle.Unit", select: "lookup_value" }
+      ]);
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.CurrentMedications || {}));
+  } catch (error) {
+    console.error("List Current Medications Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// ==================== CURRENT THERAPIES APIs ====================
+
+// Add Current Therapy
+exports.addCurrentTherapy = async (req, res) => {
+  try {
+    const { PatientId, TherapyName, PatientResponse } = req.body;
+
+    if (!PatientId || !TherapyName) {
+      return res.json(
+        __requestResponse("400", "PatientId and TherapyName are required")
+      );
+    }
+
+    // Check if patient exists
+    const patient = await PatientMaster.findById(PatientId);
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Check if therapy already exists
+    const existingTherapy = patient.CurrentTherapies.find(
+      therapy => therapy.TherapyName && therapy.TherapyName.toString() === TherapyName
+    );
+
+    if (existingTherapy) {
+      return res.json(
+        __requestResponse("400", "Therapy already exists for this patient")
+      );
+    }
+
+    // Add therapy to array
+    const newTherapy = {
+      TherapyName: TherapyName,
+      PatientResponse: PatientResponse || ""
+    };
+
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $push: { CurrentTherapies: newTherapy } },
+      { new: true, runValidators: true }
+    ).populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      patient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.CurrentTherapies));
+  } catch (error) {
+    console.error("Add Current Therapy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Update Current Therapy
+exports.updateCurrentTherapy = async (req, res) => {
+  try {
+    const { PatientId, TherapyId, PatientResponse } = req.body;
+
+    if (!PatientId || !TherapyId || !PatientResponse) {
+      return res.json(
+        __requestResponse("400", "PatientId, TherapyId, and PatientResponse are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Update specific therapy
+    const updatedPatient = await PatientMaster.findOneAndUpdate(
+      { 
+        _id: PatientId,
+        "CurrentTherapies._id": TherapyId
+      },
+      {
+        $set: {
+          "CurrentTherapies.$.PatientResponse": PatientResponse
+        }
+      },
+      { new: true, runValidators: true }
+    ).populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    if (!updatedPatient) {
+      return res.json(__requestResponse("404", "Therapy not found"));
+    }
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.CurrentTherapies));
+  } catch (error) {
+    console.error("Update Current Therapy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Remove Current Therapy
+exports.removeCurrentTherapy = async (req, res) => {
+  try {
+    const { PatientId, TherapyId } = req.body;
+
+    if (!PatientId || !TherapyId) {
+      return res.json(
+        __requestResponse("400", "PatientId and TherapyId are required")
+      );
+    }
+
+    // Get old value for audit
+    const oldPatient = await PatientMaster.findById(PatientId);
+    if (!oldPatient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    // Remove therapy from array
+    const updatedPatient = await PatientMaster.findByIdAndUpdate(
+      PatientId,
+      { $pull: { CurrentTherapies: { _id: TherapyId } } },
+      { new: true, runValidators: true }
+    ).populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    // Create audit log
+    await __CreateAuditLog(
+      "patient_master",
+      "UPDATE",
+      null,
+      oldPatient.toObject(),
+      updatedPatient.toObject(),
+      updatedPatient._id
+    );
+
+    return res.json(__requestResponse("200", __SUCCESS, updatedPatient.CurrentTherapies));
+  } catch (error) {
+    console.error("Remove Current Therapy Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// List Current Therapies
+exports.listCurrentTherapies = async (req, res) => {
+  try {
+    const { PatientId } = req.query;
+
+    if (!PatientId) {
+      return res.json(__requestResponse("400", "PatientId is required"));
+    }
+
+    const patient = await PatientMaster.findById(PatientId)
+      .select("CurrentTherapies")
+      .populate("CurrentTherapies.TherapyName", "lookup_value");
+
+    if (!patient) {
+      return res.json(__requestResponse("404", "Patient not found"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, patient.CurrentTherapies));
+  } catch (error) {
+    console.error("List Current Therapies Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};

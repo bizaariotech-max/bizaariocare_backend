@@ -2,6 +2,71 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 // PATIENT MASTER SCHEMA
+
+//  Medicine Schema (Add More supported)
+const MedicineSchema = new Schema({
+  MedicineName: {
+    // lookup_type: "MEDICINE"
+    type: Schema.Types.ObjectId,
+    ref: "admin_lookups",
+  },
+  Dosage: {
+    // lookup_type: "DOSAGE"
+    type: Schema.Types.ObjectId,
+    ref: "admin_lookups",
+  },
+  DurationInDays: {
+    // Duration (Days)
+    type: Number,
+    min: 0,
+  },
+});
+
+// Medicines Prescribed with Recovery Cycle
+const MedicinesPrescribedSchema = new Schema(
+  {
+    Medicines: [MedicineSchema],
+    RecoveryCycle: {
+      // Recovery Cycle (Number) Drop Down
+      Value: {
+        type: Number,
+        min: 0,
+      },
+      Unit: {
+        // lookup_type: "DURATION_UNIT" (Days, Weeks, Months)
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    },
+    PrescriptionUrls: [
+      {
+        // Upload Prescriptions (multiple)
+        type: String,
+        trim: true,
+      },
+    ],
+  },
+  { _id: false }
+);
+
+//  Therapy(ies) (Add More supported)
+const TherapySchema = new Schema({
+  TherapyName: {
+    // lookup_type: "THERAPY"
+    type: Schema.Types.ObjectId,
+    ref: "admin_lookups",
+  },
+  // PatientResponse: {
+  //   // lookup_type: "PATIENT_RESPONSE" (One Response for each therapy)
+  //   type: Schema.Types.ObjectId,
+  //   ref: "admin_lookups",
+  // },
+  PatientResponse: {
+    type: String,
+    // enum: ["Excellent", "Good", "Fair", "Poor", "No Improvement"],
+  },
+});
+
 const PatientMasterSchema = new Schema(
   {
     // 1. PATIENT ID (Country Specific)
@@ -236,12 +301,96 @@ const PatientMasterSchema = new Schema(
       type: String,
       default: "",
     },
-    // new fields
+
+    //* New fields
+    // Pre-Existing Disease (s)
+    // Current Medications
+    // Current Therapies
+    //     Family History
+    // 	Habit & Lifestyle
+    // 	Allergies
+    // Past Accident’s Trauma
+
+    PreExistingDisease: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+
+    // Medicines Prescribed with Recovery Cycle
+    //   MedicinesPrescribedSchema: {
+    // Medicines: [{
+    //   MedicineName: {
+    //     // lookup_type: "MEDICINE"
+    //     type: Schema.Types.ObjectId,
+    //     ref: "admin_lookups",
+    //   },
+    //   Dosage: {
+    //     // lookup_type: "DOSAGE"
+    //     type: Schema.Types.ObjectId,
+    //     ref: "admin_lookups",
+    //   },
+    //   DurationInDays: {
+    //     // Duration (Days)
+    //     type: Number,
+    //     min: 0,
+    //   },
+    // }],
+    // RecoveryCycle: {
+    //   // Recovery Cycle (Number) Drop Down
+    //   Value: {
+    //     type: Number,
+    //     min: 0,
+    //   },
+    //   Unit: {
+    //     // lookup_type: "DURATION_UNIT" (Days, Weeks, Months)
+    //     type: Schema.Types.ObjectId,
+    //     ref: "admin_lookups",
+    //   },
+    // },
+    // PrescriptionUrls: [
+    //   {
+    //     // Upload Prescriptions (multiple)
+    //     type: String,
+    //     trim: true,
+    //   },
+    // ],
+    //    },
+
+    //   CurrentTherapies: [{
+    //     TherapyName: {
+    //       // lookup_type: "THERAPY"
+    //       type: Schema.Types.ObjectId,
+    //       ref: "admin_lookups",
+    //     },
+    //     // PatientResponse: {
+    //     //   // lookup_type: "PATIENT_RESPONSE" (One Response for each therapy)
+    //     //   type: Schema.Types.ObjectId,
+    //     //   ref: "admin_lookups",
+    //     // },
+    //     PatientResponse: {
+    //       type: String,
+    //       // enum: ["Excellent", "Good", "Fair", "Poor", "No Improvement"],
+    //     },
+    //   }],
+
+    CurrentMedications: {
+     
+      type: MedicinesPrescribedSchema,
+    },
+
+    CurrentTherapies: [
+      {
+      //  (multiple with Add More)
+        type: TherapySchema,
+      },
+    ],
 
     FamilyHistory: [
       {
         type: Schema.Types.ObjectId,
-        ref: "admin_lookups",
+        ref: "admin_lookups", // is genetic family history -yes
       },
     ],
 
