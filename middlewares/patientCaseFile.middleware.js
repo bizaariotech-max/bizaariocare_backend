@@ -62,6 +62,28 @@ const patientCaseFileSchema = Joi.object({
     .allow(null, "")
     .optional(),
 
+  Disease: Joi.array().items(
+    Joi.string()
+      .custom((value, helpers) => {
+        if (value && !mongoose.Types.ObjectId.isValid(value)) {
+          return helpers.error("any.invalid");
+        }
+        return value;
+      })
+      .allow(null, "")
+      .optional()
+  ),
+  Accident: Joi.array().items(
+    Joi.string()
+      .custom((value, helpers) => {
+        if (value && !mongoose.Types.ObjectId.isValid(value)) {
+          return helpers.error("any.invalid");
+        }
+        return value;
+      })
+      .allow(null, "")
+      .optional()
+  ),
   DoctorName: Joi.string().trim().allow("", null).optional(),
 
   HospitalId: Joi.string()

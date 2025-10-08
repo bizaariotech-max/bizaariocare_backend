@@ -7,6 +7,10 @@ const { Schema } = mongoose;
 
 const PatientCaseFile = new Schema(
   {
+    ParentCaseFileId: {
+      type: Schema.Types.ObjectId,
+      ref: "patient_case_file",
+    },
     PatientId: {
       type: Schema.Types.ObjectId,
       ref: "patient_master",
@@ -27,6 +31,18 @@ const PatientCaseFile = new Schema(
       type: Schema.Types.ObjectId,
       ref: "admin_lookups",
     },
+    Disease: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
+    Accident: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "admin_lookups",
+      },
+    ],
     DoctorId: { type: Schema.Types.ObjectId, ref: "asset_master" },
     DoctorName: { type: String, trim: true },
     HospitalId: { type: Schema.Types.ObjectId, ref: "asset_master" },

@@ -103,7 +103,10 @@ exports.savePatientCaseFile = async (req, res) => {
     patientCaseFile = await PatientCaseFile.findById(patientCaseFile._id)
       .populate("PatientId", "Name PatientId")
       .populate("DoctorId", "AssetName")
-      .populate("HospitalId", "AssetName");
+      .populate("HospitalId", "AssetName")
+      .populate("MedicalSpeciality", "lookup_value")
+      .populate("Disease", "lookup_value")
+      .populate("Accident", "lookup_value");
 
     return res.json(
       __requestResponse("200", __SUCCESS, {
@@ -230,6 +233,8 @@ exports.patientCaseFileList = async (req, res) => {
       .populate("DoctorId", "AssetName")
       .populate("HospitalId", "AssetName")
       .populate("MedicalSpeciality", "lookup_value")
+      .populate("Disease", "lookup_value")
+      .populate("Accident", "lookup_value")
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ Date: -1 })
@@ -265,6 +270,9 @@ exports.getPatientCaseFileById = async (req, res) => {
       .populate("PatientId", "Name PatientId")
       .populate("DoctorId", "AssetName")
       .populate("HospitalId", "AssetName")
+      .populate("MedicalSpeciality", "lookup_value")
+      .populate("Disease", "lookup_value")
+      .populate("Accident", "lookup_value")
       .lean();
 
     if (!caseFile) {
