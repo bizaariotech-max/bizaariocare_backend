@@ -190,7 +190,7 @@ exports.savePatientCaseFilexx = async (req, res) => {
 };
 
 // Get Patient Case File List
-exports.patientCaseFileList = async (req, res) => {
+exports.patientCaseFileListxx = async (req, res) => {
   try {
     const {
       page = 1,
@@ -261,6 +261,116 @@ exports.patientCaseFileList = async (req, res) => {
   }
 };
 
+// Get Patient Case File List
+exports.patientCaseFileList = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      search = "",
+      PatientId,
+      TreatmentType,
+      FromDate,
+      ToDate,
+    } = req.query;
+
+    const query = { IsDeleted: false };
+
+    // Apply filters
+    if (PatientId) {
+      query.PatientId = PatientId;
+    }
+    if (TreatmentType) {
+      query.TreatmentType = TreatmentType;
+    }
+    if (FromDate || ToDate) {
+      query.Date = {};
+      if (FromDate) query.Date.$gte = new Date(FromDate);
+      if (ToDate) query.Date.$lte = new Date(ToDate);
+    }
+    if (search) {
+      query.$or = [
+        { DoctorName: new RegExp(search, "i") },
+        { HospitalName: new RegExp(search, "i") },
+        { Notes: new RegExp(search, "i") },
+      ];
+    }
+
+    // Count total records
+    const total = await PatientCaseFile.countDocuments(query);
+
+    // Get paginated list
+    const list = await PatientCaseFile.find(query)
+      .populate("PatientId", "Name PatientId")
+      .populate("DoctorId", "AssetName")
+      .populate("HospitalId", "AssetName")
+      .populate("MedicalSpeciality", "lookup_value")
+      .populate("Disease", "lookup_value")
+      .populate("Accident", "lookup_value")
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ Date: -1 })
+      .lean();
+
+    // Get medical history status for each case file
+    const caseFileIds = list.map((item) => item._id);
+
+    // Fetch latest medical history for all case files in one query
+    const medicalHistories = await MedicalHistory.find({
+      CaseFileId: { $in: caseFileIds },
+      IsDeleted: false,
+    })
+      .select("CaseFileId Status updatedAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Create a map of case file ID to latest medical history
+    const medicalHistoryMap = {};
+    medicalHistories.forEach((history) => {
+      const caseFileId = history.CaseFileId.toString();
+      if (!medicalHistoryMap[caseFileId]) {
+        medicalHistoryMap[caseFileId] = {
+          Status: history.Status,
+          LastUpdated: history.updatedAt,
+        };
+      }
+    });
+
+    // Add medical history status to each case file
+    const enrichedList = list.map((caseFile) => {
+      const caseFileId = caseFile._id.toString();
+      const medicalHistory = medicalHistoryMap[caseFileId];
+
+      return {
+        ...caseFile,
+        // MedicalHistoryStatus: medicalHistory ? medicalHistory.Status : null,
+        Status: medicalHistory ? medicalHistory.Status : null,
+        MedicalHistoryLastUpdated: medicalHistory
+          ? medicalHistory.LastUpdated
+          : null,
+      };
+    });
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        filters: {
+          search,
+          PatientId,
+          TreatmentType,
+          FromDate,
+          ToDate,
+        },
+        list: __deepClone(enrichedList),
+      })
+    );
+  } catch (error) {
+    console.error("Patient Case File List Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
 // Get Patient Case File By ID
 exports.getPatientCaseFileById = async (req, res) => {
   try {

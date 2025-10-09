@@ -15,6 +15,16 @@ const patientCaseFileSchema = Joi.object({
     .allow(null, "")
     .optional(),
 
+  ParentCaseFileId: Joi.string()
+    .custom((value, helpers) => {
+      if (value && !mongoose.Types.ObjectId.isValid(value)) {
+        return helpers.error("any.invalid");
+      }
+      return value;
+    })
+    .allow(null, "")
+    .optional(),
+
   PatientId: Joi.string()
     .custom((value, helpers) => {
       if (!mongoose.Types.ObjectId.isValid(value)) {

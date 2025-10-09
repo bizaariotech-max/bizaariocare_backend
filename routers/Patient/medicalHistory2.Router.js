@@ -45,6 +45,9 @@ const {
   editSurgeriesProcedures,
   listSurgeriesProcedures,
   updateMedicalHistoryStatus,
+  updateMedicalHistoryStatusByCaseFileId,
+  bulkUpdateMedicalHistoryStatusByCaseFileIds,
+  getMedicalHistoryStatusByCaseFileId,
   // new fields controllers
 
   // updateFamilyHistory,
@@ -297,6 +300,18 @@ router.delete("/section/:CaseFileId/:sectionName/:itemId", deleteSectionItem);
 
 // Update Status
 router.put("/status/:id", updateMedicalHistoryStatus);
+// Update Status by CaseFileId
+router.put(
+  "/status/casefile/:CaseFileId",
+  updateMedicalHistoryStatusByCaseFileId
+);
+// Bulk Update Status by CaseFileIds
+router.put(
+  "/status/casefile/bulk",
+  bulkUpdateMedicalHistoryStatusByCaseFileIds
+);
+// Get Status by CaseFileId
+router.get("/status/casefile/:CaseFileId", getMedicalHistoryStatusByCaseFileId);
 
 
 

@@ -4766,6 +4766,278 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
   }
 };
 
+// Status Update by Case File ID
+exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const { caseFileId } = req.params;
+    const { Status } = req.body;
+
+    // Validate Status
+    const validStatuses = [
+      "Active",
+      "Ongoing",
+      "In-Treatment",
+      "Monitoring",
+      "Chronic",
+      "Resolved",
+      "Cured",
+      "Past",
+    ];
+
+    if (!validStatuses.includes(Status)) {
+      return res.json(__requestResponse("400", "Invalid status value"));
+    }
+
+    // Validate Case File ID exists
+    const caseFile = await PatientCaseFile.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
+        { CaseFileId: caseFileId }
+      ],
+      IsDeleted: false
+    }).lean();
+
+    if (!caseFile) {
+      return res.json(__requestResponse("404", "Case File not found"));
+    }
+
+    // Find medical history by case file ID
+    const oldValue = await MedicalHistory.findOne({
+      CaseFileId: caseFile._id,
+      IsDeleted: false
+    }).lean();
+
+    if (!oldValue) {
+      return res.json(__requestResponse("404", "Medical History not found for this Case File"));
+    }
+
+    // Update status
+    const medicalHistory = await MedicalHistory.findOneAndUpdate(
+      {
+        CaseFileId: caseFile._id,
+        IsDeleted: false
+      },
+      {
+        Status,
+        // UpdatedBy: req.user._id,
+      },
+      {
+        new: true,
+        session,
+        runValidators: true,
+      }
+    ).populate([
+      { path: "PatientId", select: "Name PatientId" },
+      { path: "CaseFileId" },
+      { path: "CreatedBy", select: "Name" },
+      { path: "UpdatedBy", select: "Name" },
+    ]);
+
+    // Create audit log
+    await __CreateAuditLog(
+      "medical_history2",
+      "UPDATE",
+      null,
+      oldValue,
+      medicalHistory.toObject(),
+      medicalHistory._id
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json(__requestResponse("200", __SUCCESS, {
+      medicalHistory,
+      caseFile: {
+        _id: caseFile._id,
+        CaseFileId: caseFile.CaseFileId,
+        PatientId: caseFile.PatientId
+      }
+    }));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Update Medical History Status by Case File ID Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Get Medical History Status by Case File ID
+exports.getMedicalHistoryStatusByCaseFileId = async (req, res) => {
+  try {
+    const { caseFileId } = req.params;
+
+    // Validate Case File ID exists
+    const caseFile = await PatientCaseFile.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
+        { CaseFileId: caseFileId }
+      ],
+      IsDeleted: false
+    }).lean();
+
+    if (!caseFile) {
+      return res.json(__requestResponse("404", "Case File not found"));
+    }
+
+    // Find medical history by case file ID
+    const medicalHistory = await MedicalHistory.findOne({
+      CaseFileId: caseFile._id,
+      IsDeleted: false
+    })
+    .select('Status createdAt updatedAt')
+    .populate([
+      { path: "PatientId", select: "Name PatientId" },
+      { path: "CaseFileId", select: "CaseFileId Date TreatmentType" },
+    ])
+    .lean();
+
+    if (!medicalHistory) {
+      return res.json(__requestResponse("404", "Medical History not found for this Case File"));
+    }
+
+    return res.json(__requestResponse("200", __SUCCESS, {
+      medicalHistory,
+      caseFile: {
+        _id: caseFile._id,
+        CaseFileId: caseFile.CaseFileId,
+        PatientId: caseFile.PatientId
+      }
+    }));
+  } catch (error) {
+    console.error("Get Medical History Status by Case File ID Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+// Bulk Update Medical History Status by Multiple Case File IDs
+exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const { caseFileIds, Status } = req.body;
+
+    // Validate inputs
+    if (!Array.isArray(caseFileIds) || caseFileIds.length === 0) {
+      return res.json(__requestResponse("400", "Case File IDs array is required"));
+    }
+
+    const validStatuses = [
+      "Active",
+      "Ongoing",
+      "In-Treatment",
+      "Monitoring",
+      "Chronic",
+      "Resolved",
+      "Cured",
+      "Past",
+    ];
+
+    if (!validStatuses.includes(Status)) {
+      return res.json(__requestResponse("400", "Invalid status value"));
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const caseFileId of caseFileIds) {
+      try {
+        // Validate Case File ID exists
+        const caseFile = await PatientCaseFile.findOne({
+          $or: [
+            { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
+            { CaseFileId: caseFileId }
+          ],
+          IsDeleted: false
+        }).lean();
+
+        if (!caseFile) {
+          errors.push({
+            caseFileId,
+            error: "Case File not found"
+          });
+          continue;
+        }
+
+        // Find and update medical history
+        const oldValue = await MedicalHistory.findOne({
+          CaseFileId: caseFile._id,
+          IsDeleted: false
+        }).lean();
+
+        if (!oldValue) {
+          errors.push({
+            caseFileId,
+            error: "Medical History not found for this Case File"
+          });
+          continue;
+        }
+
+        const medicalHistory = await MedicalHistory.findOneAndUpdate(
+          {
+            CaseFileId: caseFile._id,
+            IsDeleted: false
+          },
+          {
+            Status,
+            // UpdatedBy: req.user._id,
+          },
+          {
+            new: true,
+            session,
+            runValidators: true,
+          }
+        );
+
+        // Create audit log
+        await __CreateAuditLog(
+          "medical_history2",
+          "BULK_UPDATE",
+          null,
+          oldValue,
+          medicalHistory.toObject(),
+          medicalHistory._id
+        );
+
+        results.push({
+          caseFileId: caseFile.CaseFileId,
+          medicalHistoryId: medicalHistory._id,
+          oldStatus: oldValue.Status,
+          newStatus: Status,
+          success: true
+        });
+
+      } catch (error) {
+        errors.push({
+          caseFileId,
+          error: error.message
+        });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json(__requestResponse("200", __SUCCESS, {
+      totalProcessed: caseFileIds.length,
+      successful: results.length,
+      failed: errors.length,
+      results,
+      errors: errors.length > 0 ? errors : null
+    }));
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Bulk Update Medical History Status Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
 // ==================== FAMILY HISTORY ====================
 
 // Update Family History (Replace entire array) - NO TRANSACTION
