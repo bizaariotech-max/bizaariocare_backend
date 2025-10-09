@@ -4767,7 +4767,6 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
 };
 
 // Status Update by Case File ID
-// Status Update by Case File ID
 exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -4877,16 +4876,20 @@ exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
 // Get Medical History Status by Case File ID
 exports.getMedicalHistoryStatusByCaseFileId = async (req, res) => {
   try {
-    const { caseFileId } = req.params;
+    const { CaseFileId } = req.params; // Fixed: Use CaseFileId (uppercase) to match route
+
+    console.log("Received CaseFileId for GET:", CaseFileId); // Debug log
 
     // Validate Case File ID exists
     const caseFile = await PatientCaseFile.findOne({
       $or: [
-        { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
-        { CaseFileId: caseFileId }
+        { _id: mongoose.Types.ObjectId.isValid(CaseFileId) ? CaseFileId : null },
+        { CaseFileId: CaseFileId }
       ],
       IsDeleted: false
     }).lean();
+
+    console.log("Found CaseFile for GET:", caseFile); // Debug log
 
     if (!caseFile) {
       return res.json(__requestResponse("404", "Case File not found"));
@@ -4903,6 +4906,8 @@ exports.getMedicalHistoryStatusByCaseFileId = async (req, res) => {
       { path: "CaseFileId", select: "CaseFileId Date TreatmentType" },
     ])
     .lean();
+
+    console.log("Found Medical History for GET:", medicalHistory); // Debug log
 
     if (!medicalHistory) {
       return res.json(__requestResponse("404", "Medical History not found for this Case File"));
@@ -4928,11 +4933,13 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
   try {
     session.startTransaction();
 
-    const { caseFileIds, Status } = req.body;
+    const { CaseFileIds, Status } = req.body; // Fixed: Use CaseFileIds (uppercase) for consistency
+
+    console.log("Received CaseFileIds for BULK UPDATE:", CaseFileIds); // Debug log
 
     // Validate inputs
-    if (!Array.isArray(caseFileIds) || caseFileIds.length === 0) {
-      return res.json(__requestResponse("400", "Case File IDs array is required"));
+    if (!Array.isArray(CaseFileIds) || CaseFileIds.length === 0) {
+      return res.json(__requestResponse("400", "CaseFileIds array is required"));
     }
 
     const validStatuses = [
@@ -4953,20 +4960,22 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
     const results = [];
     const errors = [];
 
-    for (const caseFileId of caseFileIds) {
+    for (const CaseFileId of CaseFileIds) { // Fixed: Use CaseFileId for consistency
       try {
+        console.log("Processing CaseFileId:", CaseFileId); // Debug log
+
         // Validate Case File ID exists
         const caseFile = await PatientCaseFile.findOne({
           $or: [
-            { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
-            { CaseFileId: caseFileId }
+            { _id: mongoose.Types.ObjectId.isValid(CaseFileId) ? CaseFileId : null },
+            { CaseFileId: CaseFileId }
           ],
           IsDeleted: false
         }).lean();
 
         if (!caseFile) {
           errors.push({
-            caseFileId,
+            CaseFileId, // Fixed: Use CaseFileId for consistency
             error: "Case File not found"
           });
           continue;
@@ -4980,7 +4989,7 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
 
         if (!oldValue) {
           errors.push({
-            caseFileId,
+            CaseFileId, // Fixed: Use CaseFileId for consistency
             error: "Medical History not found for this Case File"
           });
           continue;
@@ -5013,7 +5022,7 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
         );
 
         results.push({
-          caseFileId: caseFile.CaseFileId,
+          CaseFileId: caseFile.CaseFileId, // Fixed: Use CaseFileId for consistency
           medicalHistoryId: medicalHistory._id,
           oldStatus: oldValue.Status,
           newStatus: Status,
@@ -5022,7 +5031,7 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
 
       } catch (error) {
         errors.push({
-          caseFileId,
+          CaseFileId, // Fixed: Use CaseFileId for consistency
           error: error.message
         });
       }
@@ -5032,7 +5041,7 @@ exports.bulkUpdateMedicalHistoryStatusByCaseFileIds = async (req, res) => {
     session.endSession();
 
     return res.json(__requestResponse("200", __SUCCESS, {
-      totalProcessed: caseFileIds.length,
+      totalProcessed: CaseFileIds.length, // Fixed: Use CaseFileIds for consistency
       successful: results.length,
       failed: errors.length,
       results,
