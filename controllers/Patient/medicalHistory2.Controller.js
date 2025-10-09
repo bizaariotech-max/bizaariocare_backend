@@ -4767,13 +4767,16 @@ exports.updateMedicalHistoryStatus = async (req, res) => {
 };
 
 // Status Update by Case File ID
+// Status Update by Case File ID
 exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
-    const { caseFileId } = req.params;
+    const { CaseFileId } = req.params; // Fixed: Use CaseFileId (uppercase) to match route
     const { Status } = req.body;
+
+    console.log("Received CaseFileId:", CaseFileId); // Debug log
 
     // Validate Status
     const validStatuses = [
@@ -4791,33 +4794,37 @@ exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
       return res.json(__requestResponse("400", "Invalid status value"));
     }
 
-    // Validate Case File ID exists
+    // Validate Case File ID exists - Fixed logic
     const caseFile = await PatientCaseFile.findOne({
       $or: [
-        { _id: mongoose.Types.ObjectId.isValid(caseFileId) ? caseFileId : null },
-        { CaseFileId: caseFileId }
+        { _id: mongoose.Types.ObjectId.isValid(CaseFileId) ? CaseFileId : null },
+        { CaseFileId: CaseFileId }
       ],
       IsDeleted: false
     }).lean();
+
+    console.log("Found CaseFile:", caseFile); // Debug log
 
     if (!caseFile) {
       return res.json(__requestResponse("404", "Case File not found"));
     }
 
-    // Find medical history by case file ID
+    // Find medical history by case file ID - Fixed: Use the ObjectId of the case file
     const oldValue = await MedicalHistory.findOne({
-      CaseFileId: caseFile._id,
+      CaseFileId: caseFile._id, // This should use the ObjectId of the case file
       IsDeleted: false
     }).lean();
+
+    console.log("Found Medical History:", oldValue); // Debug log
 
     if (!oldValue) {
       return res.json(__requestResponse("404", "Medical History not found for this Case File"));
     }
 
-    // Update status
+    // Update status - Fixed: Use the ObjectId of the case file
     const medicalHistory = await MedicalHistory.findOneAndUpdate(
       {
-        CaseFileId: caseFile._id,
+        CaseFileId: caseFile._id, // This should use the ObjectId of the case file
         IsDeleted: false
       },
       {
@@ -4835,6 +4842,8 @@ exports.updateMedicalHistoryStatusByCaseFileId = async (req, res) => {
       { path: "CreatedBy", select: "Name" },
       { path: "UpdatedBy", select: "Name" },
     ]);
+
+    console.log("Updated Medical History:", medicalHistory); // Debug log
 
     // Create audit log
     await __CreateAuditLog(
