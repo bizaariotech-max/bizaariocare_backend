@@ -75,6 +75,23 @@ const createPatientReferralSchema = Joi.object({
   ReferringDoctor: objectIdField(true).messages({
     "any.required": "Referring doctor is required",
   }),
+  ReasonForReferral: Joi.object({
+    ReasonType: objectIdField(true).messages({
+      "any.required": "Reason type is required",
+    }),
+    DoctorRemarks: Joi.array()
+      .items(
+        Joi.object({
+          Remark: Joi.string().trim().optional(),
+          CreatedAt: Joi.date().default(() => new Date()),
+        })
+      )
+      .optional(),
+  })
+    .required()
+    .messages({
+      "any.required": "Reason for referral is required",
+    }),
   MedicalSpecialty: objectIdField().optional(),
   ReferredCity: objectIdField().optional(),
   ReferredDoctors: Joi.array().items(objectIdField()).optional(),
