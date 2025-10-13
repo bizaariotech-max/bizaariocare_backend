@@ -114,20 +114,13 @@ const doctorRemarkSchema = Joi.object({
 
 // ==================== SECOND OPINION VALIDATIONS ====================
 
-// Second Opinion Questions Validation
+// Updated Second Opinion Questions Validation
 const secondOpinionQuestionsSchema = Joi.object({
+  // Second Opinion Fields
   SecondOpinionQueries: Joi.array().items(objectIdField()).optional(),
-  UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
-});
-
-// Second Opinion Question Validation
-const secondOpinionQuestionSchema = Joi.object({
-  Question: Joi.string().trim().required().messages({
-    "any.required": "Question is required",
-    "string.empty": "Question cannot be empty"
-  }),
+  Questions: Joi.array().items(Joi.string().trim()).optional(),
+  AdditionalInformation: Joi.string().trim().optional().allow(""),
+  
   UpdatedBy: objectIdField(true).messages({
     "any.required": "Updated by is required"
   })
@@ -140,8 +133,8 @@ const proposedSurgerySchema = Joi.object({
   SurgeryProcedures: Joi.array().items(objectIdField()).optional(),
   DoctorNote: Joi.string().trim().optional().allow(""),
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
+    "any.required": "Updated by is required",
+  }),
 });
 
 // ==================== PRE-SURGICAL CONSIDERATIONS VALIDATIONS ====================
@@ -155,8 +148,8 @@ const preSurgicalConsiderationsSchema = Joi.object({
   PatientConcerns: Joi.array().items(objectIdField()).optional(),
   LogisticalConsiderations: Joi.array().items(objectIdField()).optional(),
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
+    "any.required": "Updated by is required",
+  }),
 });
 
 // ==================== DOCTOR/HOSPITAL SELECTION VALIDATIONS ====================
@@ -169,8 +162,8 @@ const doctorHospitalSelectionSchema = Joi.object({
   SelectionDateTime: Joi.date().optional(),
   Geolocation: geolocationSchema.optional(),
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
+    "any.required": "Updated by is required",
+  }),
 });
 
 // ==================== REFERRAL RESPONSE VALIDATIONS ====================
@@ -178,26 +171,36 @@ const doctorHospitalSelectionSchema = Joi.object({
 // Referral Response Validation
 const referralResponseSchema = Joi.object({
   ResponseMessage: Joi.string().trim().optional().allow(""),
-  AcceptanceStatus: enumField(["ACCEPTED", "REJECTED", "COUNTER_PROPOSAL"]).required().messages({
-    "any.required": "Acceptance status is required"
-  }),
+  AcceptanceStatus: enumField(["ACCEPTED", "REJECTED", "COUNTER_PROPOSAL"])
+    .required()
+    .messages({
+      "any.required": "Acceptance status is required",
+    }),
   ProposedDateTime: Joi.date().optional(),
   RespondedBy: objectIdField(true).messages({
-    "any.required": "Responded by is required"
-  })
+    "any.required": "Responded by is required",
+  }),
 });
 
 // ==================== STATUS UPDATE VALIDATIONS ====================
 
 // Status Update Validation
 const statusUpdateSchema = Joi.object({
-  ReferralStatus: enumField(["PENDING", "ACCEPTED", "REJECTED", "COMPLETED", "CANCELLED"]).required().messages({
-    "any.required": "Referral status is required"
-  }),
+  ReferralStatus: enumField([
+    "PENDING",
+    "ACCEPTED",
+    "REJECTED",
+    "COMPLETED",
+    "CANCELLED",
+  ])
+    .required()
+    .messages({
+      "any.required": "Referral status is required",
+    }),
   PriorityLevel: enumField(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
+    "any.required": "Updated by is required",
+  }),
 });
 
 // ==================== PARAMETER VALIDATIONS ====================
@@ -205,29 +208,30 @@ const statusUpdateSchema = Joi.object({
 // Patient ID Parameter Validation
 const patientIdParamSchema = Joi.object({
   patientId: objectIdField(true).messages({
-    "any.required": "Patient ID parameter is required"
-  })
+    "any.required": "Patient ID parameter is required",
+  }),
 });
 
 // Referral ID Parameter Validation
 const referralIdParamSchema = Joi.object({
   referralId: objectIdField(true).messages({
-    "any.required": "Referral ID parameter is required"
-  })
+    "any.required": "Referral ID parameter is required",
+  }),
 });
 
 // Object ID Parameter Validation
-const objectIdParamSchema = (paramName) => Joi.object({
-  [paramName]: objectIdField(true).messages({
-    "any.required": `${paramName} parameter is required`
-  })
-});
+const objectIdParamSchema = (paramName) =>
+  Joi.object({
+    [paramName]: objectIdField(true).messages({
+      "any.required": `${paramName} parameter is required`,
+    }),
+  });
 
 // Delete Request Validation
 const deleteRequestSchema = Joi.object({
   UpdatedBy: objectIdField(true).messages({
-    "any.required": "Updated by is required"
-  })
+    "any.required": "Updated by is required",
+  }),
 });
 
 // ==================== MIDDLEWARE FUNCTIONS ====================
@@ -236,11 +240,13 @@ const deleteRequestSchema = Joi.object({
 exports.validateCreatePatientReferral = (req, res, next) => {
   const { error } = createPatientReferralSchema.validate(req.body);
   if (error) {
-    const errorMessages = error.details.map(detail => detail.message);
-    return res.status(400).json(__requestResponse("400", { 
-      errorType: "Validation Error", 
-      error: errorMessages 
-    }));
+    const errorMessages = error.details.map((detail) => detail.message);
+    return res.status(400).json(
+      __requestResponse("400", {
+        errorType: "Validation Error",
+        error: errorMessages,
+      })
+    );
   }
   next();
 };
@@ -249,11 +255,13 @@ exports.validateCreatePatientReferral = (req, res, next) => {
 exports.validateReasonForReferral = (req, res, next) => {
   const { error } = reasonForReferralSchema.validate(req.body);
   if (error) {
-    const errorMessages = error.details.map(detail => detail.message);
-    return res.status(400).json(__requestResponse("400", { 
-      errorType: "Validation Error", 
-      error: errorMessages 
-    }));
+    const errorMessages = error.details.map((detail) => detail.message);
+    return res.status(400).json(
+      __requestResponse("400", {
+        errorType: "Validation Error",
+        error: errorMessages,
+      })
+    );
   }
   next();
 };
@@ -262,11 +270,13 @@ exports.validateReasonForReferral = (req, res, next) => {
 exports.validateDoctorRemark = (req, res, next) => {
   const { error } = doctorRemarkSchema.validate(req.body);
   if (error) {
-    const errorMessages = error.details.map(detail => detail.message);
-    return res.status(400).json(__requestResponse("400", { 
-      errorType: "Validation Error", 
-      error: errorMessages 
-    }));
+    const errorMessages = error.details.map((detail) => detail.message);
+    return res.status(400).json(
+      __requestResponse("400", {
+        errorType: "Validation Error",
+        error: errorMessages,
+      })
+    );
   }
   next();
 };
@@ -275,28 +285,16 @@ exports.validateDoctorRemark = (req, res, next) => {
 exports.validateSecondOpinionQuestions = (req, res, next) => {
   const { error } = secondOpinionQuestionsSchema.validate(req.body);
   if (error) {
-    const errorMessages = error.details.map(detail => detail.message);
-    return res.status(400).json(__requestResponse("400", { 
-      errorType: "Validation Error", 
-      error: errorMessages 
-    }));
+    const errorMessages = error.details.map((detail) => detail.message);
+    return res.status(400).json(
+      __requestResponse("400", {
+        errorType: "Validation Error",
+        error: errorMessages,
+      })
+    );
   }
   next();
 };
-
-// Second Opinion Question Validation Middleware
-exports.validateSecondOpinionQuestion = (req, res, next) => {
-  const { error } = secondOpinionQuestionSchema.validate(req.body);
-  if (error) {
-    const errorMessages = error.details.map(detail => detail.message);
-    return res.status(400).json(__requestResponse("400", { 
-      errorType: "Validation Error", 
-      error: errorMessages 
-    }));
-  }
-  next();
-};
-
 // Proposed Surgery Validation Middleware
 exports.validateProposedSurgery = (req, res, next) => {
   const { error } = proposedSurgerySchema.validate(req.body);

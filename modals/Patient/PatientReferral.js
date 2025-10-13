@@ -74,7 +74,7 @@ const PatientReferralSchema = new Schema(
       default: Date.now,
     },
 
-    // 8. SPECIFIC QUESTIONS FOR SECOND OPINION (Conditional Fields)
+    // *8. SPECIFIC QUESTIONS FOR SECOND OPINION (Conditional Fields)  START
     SecondOpinionQuestions: {
       // a. Second Opinion Query (Multiple Selection) - lookup_type: "SECOND_OPINION_QUERY"
       SecondOpinionQueries: [
@@ -83,27 +83,29 @@ const PatientReferralSchema = new Schema(
           ref: "admin_lookups",
         },
       ],
-
       // b. Question
-      Questions: [
-        {
-          Question: {
-            type: String,
-            trim: true,
-          },
-          CreatedAt: {
-            type: Date,
-            default: Date.now,
-          },
-        },
-      ],
+      Questions: [String],
+      // b. Question
+      // Questions: [
+      //   {
+      //     Question: {
+      //       type: String,
+      //       trim: true,
+      //     },
+      //     CreatedAt: {
+      //       type: Date,
+      //       default: Date.now,
+      //     },
+      //   },
+      // ],
+      // 9. ADDITIONAL INFORMATION (Text Area)
+      AdditionalInformation: {
+        type: String,
+        trim: true,
+      },
     },
 
-    // 9. ADDITIONAL INFORMATION (Text Area)
-    AdditionalInformation: {
-      type: String,
-      trim: true,
-    },
+    // *. SPECIFIC QUESTIONS FOR SECOND OPINION (Conditional Fields) END
 
     // 10. PROPOSED SURGERY (For Medical Tourism)
     ProposedSurgery: {

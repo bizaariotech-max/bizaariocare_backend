@@ -15,9 +15,10 @@ const {
   
   // Second Opinion
   updateSecondOpinionQuestions,
-  addSecondOpinionQuestion,
-  updateSecondOpinionQuestion,
-  deleteSecondOpinionQuestion,
+  // updateSecondOpinionQuestions,
+  // addSecondOpinionQuestion,
+  // updateSecondOpinionQuestion,
+  // deleteSecondOpinionQuestion,
   
   // Proposed Surgery
   updateProposedSurgery,
@@ -56,8 +57,9 @@ const {
   validateCreatePatientReferral,
   validateReasonForReferral,
   validateDoctorRemark,
+  // validateSecondOpinionQuestions,
+  // validateSecondOpinionQuestion,
   validateSecondOpinionQuestions,
-  validateSecondOpinionQuestion,
   validateProposedSurgery,
   validatePreSurgicalConsiderations,
   validateDoctorHospitalSelection,
@@ -125,36 +127,44 @@ router.delete("/deleteDoctorRemark/:referralId/:remarkId",
 );
 
 //*==================== SECOND OPINION ROUTES ====================
-
-// Update Second Opinion Questions
-router.put("/updateSecondOpinionQuestions/:referralId", 
+// *new
+router.put(
+  "/updateSecondOpinionQuestions/:referralId",
   validateReferralIdParam,
   validateSecondOpinionQuestions,
   updateSecondOpinionQuestions
 );
+// *new
 
-// Add Second Opinion Question
-router.post("/addSecondOpinionQuestion/:referralId", 
-  validateReferralIdParam,
-  validateSecondOpinionQuestion,
-  addSecondOpinionQuestion
-);
+// // Update Second Opinion Questions
+// router.put("/updateSecondOpinionQuestions/:referralId", 
+//   validateReferralIdParam,
+//   validateSecondOpinionQuestions,
+//   updateSecondOpinionQuestions
+// );
 
-// Update Second Opinion Question
-router.put("/updateSecondOpinionQuestion/:referralId/:questionId", 
-  validateReferralIdParam,
-  validateObjectIdParam('questionId'),
-  validateSecondOpinionQuestion,
-  updateSecondOpinionQuestion
-);
+// // Add Second Opinion Question
+// router.post("/addSecondOpinionQuestion/:referralId", 
+//   validateReferralIdParam,
+//   validateSecondOpinionQuestion,
+//   addSecondOpinionQuestion
+// );
 
-// Delete Second Opinion Question
-router.delete("/deleteSecondOpinionQuestion/:referralId/:questionId", 
-  validateReferralIdParam,
-  validateObjectIdParam('questionId'),
-  validateDeleteRequest,
-  deleteSecondOpinionQuestion
-);
+// // Update Second Opinion Question
+// router.put("/updateSecondOpinionQuestion/:referralId/:questionId", 
+//   validateReferralIdParam,
+//   validateObjectIdParam('questionId'),
+//   validateSecondOpinionQuestion,
+//   updateSecondOpinionQuestion
+// );
+
+// // Delete Second Opinion Question
+// router.delete("/deleteSecondOpinionQuestion/:referralId/:questionId", 
+//   validateReferralIdParam,
+//   validateObjectIdParam('questionId'),
+//   validateDeleteRequest,
+//   deleteSecondOpinionQuestion
+// );
 
 // ==================== PROPOSED SURGERY ROUTES ====================
 
