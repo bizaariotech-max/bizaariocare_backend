@@ -455,7 +455,10 @@ exports.getSecondOpinionQuestions = async (req, res) => {
   try {
     const { referralId } = req.params;
 
-    const referral = await PatientReferral.findById(referralId);
+    const referral = await PatientReferral.findById(referralId).populate(
+      "SecondOpinionQuestions.SecondOpinionQueries",
+      "lookup_value"
+    );
     if (!referral || referral.IsDeleted) {
       return res
         .status(404)
