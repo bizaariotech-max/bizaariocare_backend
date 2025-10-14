@@ -450,7 +450,45 @@ exports.deleteDoctorRemark = async (req, res) => {
   }
 };
 
-//* ==================== SECOND OPINION OPERATIONS ====================
+// GET API to retrieve Second Opinion Questions data only
+exports.getSecondOpinionQuestions = async (req, res) => {
+  try {
+    const { referralId } = req.params;
+
+    const referral = await PatientReferral.findById(referralId);
+    if (!referral || referral.IsDeleted) {
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
+    }
+
+    // Return only the SecondOpinionQuestions section
+    const secondOpinionData = referral.SecondOpinionQuestions || {
+      SecondOpinionQueries: null,
+      Questions: [],
+      AdditionalInformation: ""
+    };
+
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Second opinion questions retrieved successfully",
+          secondOpinionData
+        )
+      );
+  } catch (error) {
+    console.error("Get second opinion questions error:", error);
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
+  }
+};
+
+//* ==================== SECOND OPINION OPERATIONS (OLD) ====================
 // *new
 // Unified API to update Second Opinion Questions
 exports.updateSecondOpinionQuestions = async (req, res) => {

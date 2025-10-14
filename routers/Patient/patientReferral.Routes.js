@@ -6,35 +6,36 @@ const {
   getPatientReferral,
   getPatientReferralsByPatientId,
   createPatientReferral,
-  
+
   // Reason for Referral
   updateReasonForReferral,
   addDoctorRemark,
   updateDoctorRemark,
   deleteDoctorRemark,
-  
+
   // Second Opinion
   updateSecondOpinionQuestions,
+  getSecondOpinionQuestions,
   // updateSecondOpinionQuestions,
   // addSecondOpinionQuestion,
   // updateSecondOpinionQuestion,
   // deleteSecondOpinionQuestion,
-  
+
   // Proposed Surgery
   updateProposedSurgery,
-  
+
   // Pre-Surgical Considerations
   updatePreSurgicalConsiderations,
-  
+
   // Doctor/Hospital Selection
   updateDoctorHospitalSelection,
-  
+
   // Referral Response
   addReferralResponse,
-  
+
   // Status Update
   updateReferralStatus,
-  
+
   // Search and Analytics
   getReferralsByReferringDoctor,
   getReferralsByReferredDoctor,
@@ -43,14 +44,14 @@ const {
   getOverdueReferrals,
   getReferralsBySpecialty,
   getReferralsByCity,
-  
+
   // Lookup Helpers
   getLookupsByType,
   getCities,
   getDoctorsBySpecialtyAndCity,
-  
+
   // Delete
-  deletePatientReferral
+  deletePatientReferral,
 } = require("../../controllers/Patient/patientReferral.Controller");
 
 const {
@@ -68,7 +69,7 @@ const {
   validatePatientIdParam,
   validateReferralIdParam,
   validateObjectIdParam,
-  validateDeleteRequest
+  validateDeleteRequest,
 } = require("../../middlewares/patientReferral.middleware");
 
 // Test Route
@@ -77,56 +78,70 @@ router.get("/test", test);
 // ==================== MAIN REFERRAL ROUTES ====================
 
 // Get Patient Referral by ID
-router.get("/getPatientReferral/:referralId", 
-  validateReferralIdParam, 
+router.get(
+  "/getPatientReferral/:referralId",
+  validateReferralIdParam,
   getPatientReferral
 );
 
 // Get Patient Referrals by Patient ID
-router.get("/getPatientReferralsByPatientId/:patientId", 
-  validatePatientIdParam, 
+router.get(
+  "/getPatientReferralsByPatientId/:patientId",
+  validatePatientIdParam,
   getPatientReferralsByPatientId
 );
 
 // Create New Patient Referral
-router.post("/createPatientReferral", 
-  validateCreatePatientReferral, 
+router.post(
+  "/createPatientReferral",
+  validateCreatePatientReferral,
   createPatientReferral
 );
 
 // ==================== REASON FOR REFERRAL ROUTES ====================
 
 // Update Reason for Referral
-router.put("/updateReasonForReferral/:referralId", 
+router.put(
+  "/updateReasonForReferral/:referralId",
   validateReferralIdParam,
   validateReasonForReferral,
   updateReasonForReferral
 );
 
 // Add Doctor Remark
-router.post("/addDoctorRemark/:referralId", 
+router.post(
+  "/addDoctorRemark/:referralId",
   validateReferralIdParam,
   validateDoctorRemark,
   addDoctorRemark
 );
 
 // Update Doctor Remark
-router.put("/updateDoctorRemark/:referralId/:remarkId", 
+router.put(
+  "/updateDoctorRemark/:referralId/:remarkId",
   validateReferralIdParam,
-  validateObjectIdParam('remarkId'),
+  validateObjectIdParam("remarkId"),
   validateDoctorRemark,
   updateDoctorRemark
 );
 
 // Delete Doctor Remark
-router.delete("/deleteDoctorRemark/:referralId/:remarkId", 
+router.delete(
+  "/deleteDoctorRemark/:referralId/:remarkId",
   validateReferralIdParam,
-  validateObjectIdParam('remarkId'),
+  validateObjectIdParam("remarkId"),
   validateDeleteRequest,
   deleteDoctorRemark
 );
 
 //*==================== SECOND OPINION ROUTES ====================
+// GET Second Opinion Questions
+router.get(
+  "/getSecondOpinionQuestions/:referralId",
+  validateReferralIdParam,
+  getSecondOpinionQuestions
+);
+
 // *new
 router.put(
   "/updateSecondOpinionQuestions/:referralId",
