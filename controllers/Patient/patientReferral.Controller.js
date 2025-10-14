@@ -890,6 +890,45 @@ exports.updateProposedSurgery = async (req, res) => {
   }
 };
 
+// Get Proposed Surgery
+exports.getProposedSurgery = async (req, res) => {
+  try {
+    const { referralId } = req.params;
+
+    const referral = await PatientReferral.findById(referralId)
+      .populate("ProposedSurgery.SurgeryProcedures", "lookup_value lookup_description");
+
+    if (!referral || referral.IsDeleted) {
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
+    }
+
+    // Return proposed surgery data or default structure
+    const proposedSurgeryData = referral.ProposedSurgery || {
+      SurgeryProcedures: null,
+      DoctorNote: null
+    };
+
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Proposed surgery retrieved successfully",
+          proposedSurgeryData
+        )
+      );
+  } catch (error) {
+    console.error("Get proposed surgery error:", error);
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
+  }
+};
+
 // ==================== PRE-SURGICAL CONSIDERATIONS OPERATIONS ====================
 
 // Update Pre-Surgical Considerations
@@ -964,6 +1003,52 @@ exports.updatePreSurgicalConsiderations = async (req, res) => {
   }
 };
 
+// Get Pre-Surgical Considerations
+exports.getPreSurgicalConsiderations = async (req, res) => {
+  try {
+    const { referralId } = req.params;
+
+    const referral = await PatientReferral.findById(referralId)
+      .populate("PreSurgicalConsiderations.Comorbidities", "lookup_value lookup_description")
+      .populate("PreSurgicalConsiderations.RiskFactors", "lookup_value lookup_description")
+      .populate("PreSurgicalConsiderations.PatientConcerns", "lookup_value lookup_description")
+      .populate("PreSurgicalConsiderations.LogisticalConsiderations", "lookup_value lookup_description");
+
+    if (!referral || referral.IsDeleted) {
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
+    }
+
+    // Return pre-surgical considerations data or default structure
+    const preSurgicalData = referral.PreSurgicalConsiderations || {
+      Comorbidities: null,
+      ComorbidityDefinition: null,
+      RiskFactors: null,
+      RiskFactorDefinition: null,
+      PatientConcerns: null,
+      LogisticalConsiderations: null
+    };
+
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Pre-surgical considerations retrieved successfully",
+          preSurgicalData
+        )
+      );
+  } catch (error) {
+    console.error("Get pre-surgical considerations error:", error);
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
+  }
+};
+
 // ==================== DOCTOR/HOSPITAL SELECTION OPERATIONS ====================
 
 // Update Doctor Hospital Selection
@@ -1027,6 +1112,59 @@ exports.updateDoctorHospitalSelection = async (req, res) => {
       );
   } catch (error) {
     console.error("Update doctor hospital selection error:", error);
+    return res.status(500).json(
+      __requestResponse("500", "Internal server error", {
+        error: error.message,
+      })
+    );
+  }
+};
+
+// Get Doctor Hospital Selection
+exports.getDoctorHospitalSelection = async (req, res) => {
+  try {
+    const { referralId } = req.params;
+
+    const referral = await PatientReferral.findById(referralId)
+      .populate(
+        "DoctorHospitalSelection.SelectedCity",
+        "StationName StationType"
+      )
+      .populate(
+        "DoctorHospitalSelection.SelectedMedicalSpecialty",
+        "lookup_value lookup_description"
+      )
+      .populate(
+        "DoctorHospitalSelection.SelectedDoctors",
+        "AssetName Specialization ContactEmailAddress ContactPhoneNumber"
+      );
+
+    if (!referral || referral.IsDeleted) {
+      return res
+        .status(404)
+        .json(__requestResponse("404", "Patient referral not found", null));
+    }
+
+    // Return doctor hospital selection data or default structure
+    const doctorHospitalData = referral.DoctorHospitalSelection || {
+      SelectedCity: null,
+      SelectedMedicalSpecialty: null,
+      SelectedDoctors: null,
+      SelectionDateTime: null,
+      Geolocation: null
+    };
+
+    return res
+      .status(200)
+      .json(
+        __requestResponse(
+          "200",
+          "Doctor hospital selection retrieved successfully",
+          doctorHospitalData
+        )
+      );
+  } catch (error) {
+    console.error("Get doctor hospital selection error:", error);
     return res.status(500).json(
       __requestResponse("500", "Internal server error", {
         error: error.message,

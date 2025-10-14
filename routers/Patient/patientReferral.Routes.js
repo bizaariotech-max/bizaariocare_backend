@@ -23,12 +23,15 @@ const {
 
   // Proposed Surgery
   updateProposedSurgery,
+  getProposedSurgery,
 
   // Pre-Surgical Considerations
   updatePreSurgicalConsiderations,
+  getPreSurgicalConsiderations,
 
   // Doctor/Hospital Selection
   updateDoctorHospitalSelection,
+  getDoctorHospitalSelection,
 
   // Referral Response
   addReferralResponse,
@@ -183,6 +186,12 @@ router.put(
 
 // ==================== PROPOSED SURGERY ROUTES ====================
 
+// Get Proposed Surgery
+router.get("/getProposedSurgery/:referralId", 
+  validateReferralIdParam,
+  getProposedSurgery
+);
+
 // Update Proposed Surgery
 router.put("/updateProposedSurgery/:referralId", 
   validateReferralIdParam,
@@ -192,6 +201,12 @@ router.put("/updateProposedSurgery/:referralId",
 
 // ==================== PRE-SURGICAL CONSIDERATIONS ROUTES ====================
 
+// Get Pre-Surgical Considerations
+router.get("/getPreSurgicalConsiderations/:referralId", 
+  validateReferralIdParam,
+  getPreSurgicalConsiderations
+);
+
 // Update Pre-Surgical Considerations
 router.put("/updatePreSurgicalConsiderations/:referralId", 
   validateReferralIdParam,
@@ -200,6 +215,12 @@ router.put("/updatePreSurgicalConsiderations/:referralId",
 );
 
 // ==================== DOCTOR/HOSPITAL SELECTION ROUTES ====================
+
+// Get Doctor Hospital Selection
+router.get("/getDoctorHospitalSelection/:referralId", 
+  validateReferralIdParam,
+  getDoctorHospitalSelection
+);
 
 // Update Doctor Hospital Selection
 router.put("/updateDoctorHospitalSelection/:referralId", 
