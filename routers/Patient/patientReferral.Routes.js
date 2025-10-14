@@ -5,6 +5,7 @@ const {
   test,
   getPatientReferral,
   getPatientReferralsByPatientId,
+  getPatientReferralsByCaseFileId,
   createPatientReferral,
 
   // Reason for Referral
@@ -73,6 +74,8 @@ const {
   validateReferralIdParam,
   validateObjectIdParam,
   validateDeleteRequest,
+  validatePatientAndCaseFileIdParams,
+  validateCaseFileIdParam,
 } = require("../../middlewares/patientReferral.middleware");
 
 // Test Route
@@ -87,11 +90,19 @@ router.get(
   getPatientReferral
 );
 
-// Get Patient Referrals by Patient ID
+// Get Patient Referrals by Patient ID (with optional Case File ID)
+// Get patient referrals by patient ID
 router.get(
   "/getPatientReferralsByPatientId/:patientId",
   validatePatientIdParam,
   getPatientReferralsByPatientId
+);
+
+// Get patient referrals by case file ID
+router.get(
+  "/getPatientReferralsByCaseFileId/:caseFileId",
+  validateCaseFileIdParam,
+  getPatientReferralsByCaseFileId
 );
 
 // Create New Patient Referral

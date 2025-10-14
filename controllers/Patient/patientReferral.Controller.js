@@ -100,26 +100,101 @@ exports.getPatientReferral = async (req, res) => {
   }
 };
 
-// Get Patient Referrals by Patient ID
+// Get Patient Referrals by Patient ID or Case File ID
 exports.getPatientReferralsByPatientId = async (req, res) => {
   try {
     const { patientId } = req.params;
-
+    
+    // Get referrals by patient ID using the existing static method
     const referrals = await PatientReferral.findByPatientId(patientId);
 
-    return res
-      .status(200)
-      .json(
-        __requestResponse(
-          "200",
-          "Patient referrals retrieved successfully",
-          referrals
-        )
+    if (!referrals || referrals.length === 0) {
+      return res.status(404).json(
+        __requestResponse("404", {
+          errorType: "Not Found",
+          error: "No referrals found for this patient",
+        })
       );
+    }
+
+    return res.status(200).json(
+      __requestResponse("200", {
+        message: "Patient referrals retrieved successfully",
+        data: referrals,
+      })
+    );
   } catch (error) {
-    console.error("Get patient referrals by patient ID error:", error);
+    console.error("Error in getPatientReferralsByPatientId:", error);
     return res.status(500).json(
-      __requestResponse("500", "Internal server error", {
+      __requestResponse("500", {
+        errorType: "Internal Server Error",
+        error: error.message,
+      })
+    );
+  }
+};
+
+// New function to get referrals by case file ID
+exports.getPatientReferralsByCaseFileId = async (req, res) => {
+  try {
+    const { caseFileId } = req.params;
+    
+    // Get referrals by case file ID with comprehensive population
+    const referrals = await PatientReferral.find({
+      CaseFileId: caseFileId,
+      IsActive: true,
+      IsDeleted: false,
+    })
+      .populate("PatientId", "Name PatientId PhoneNumber")
+      .populate("CaseFileId", "CaseFileNumber CaseTitle")
+      .populate("ReferringDoctor", "AssetName Specialization")
+      .populate("ReferredDoctors", "AssetName Specialization")
+      .populate("ReasonForReferral.ReasonType", "lookup_value")
+      .populate("MedicalSpecialty", "lookup_value")
+      .populate("ReferredCity", "StationName")
+      .populate("SecondOpinionQuestions.SecondOpinionQueries", "lookup_value")
+      .populate("ProposedSurgery.SurgeryProcedures", "lookup_value")
+      .populate("PreSurgicalConsiderations.Comorbidities", "lookup_value")
+      .populate("PreSurgicalConsiderations.RiskFactors", "lookup_value")
+      .populate("PreSurgicalConsiderations.PatientConcerns", "lookup_value")
+      .populate(
+        "PreSurgicalConsiderations.LogisticalConsiderations",
+        "lookup_value"
+      )
+      .populate("DoctorHospitalSelection.SelectedCity", "StationName")
+      .populate(
+        "DoctorHospitalSelection.SelectedMedicalSpecialty",
+        "lookup_value"
+      )
+      .populate(
+        "DoctorHospitalSelection.SelectedDoctors",
+        "AssetName Specialization"
+      )
+      .populate("ReferralResponse.RespondedBy", "AssetName")
+      .populate("CreatedBy", "AssetName")
+      .populate("UpdatedBy", "AssetName")
+      .sort({ ReferralDateTime: -1 });
+
+    if (!referrals || referrals.length === 0) {
+      return res.status(404).json(
+        __requestResponse("404", {
+          errorType: "Not Found",
+          error: "No referrals found for this case file",
+        })
+      );
+    }
+
+    return res.status(200).json(
+      __requestResponse("200", {
+        message: "Case file referrals retrieved successfully",
+        data: referrals,
+      })
+    );
+  } catch (error) {
+    console.error("Error in getPatientReferralsByCaseFileId:", error);
+    return res.status(500).json(
+      __requestResponse("500", {
+        errorType: "Internal Server Error",
         error: error.message,
       })
     );

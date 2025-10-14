@@ -229,6 +229,23 @@ const patientIdParamSchema = Joi.object({
   }),
 });
 
+// Case File ID parameter validation schema
+const caseFileIdParamSchema = Joi.object({
+  caseFileId: objectIdField(true).messages({
+    "any.required": "Case File ID parameter is required",
+  }),
+});
+
+// Combined patient and case file ID parameter validation schema
+const patientAndCaseFileIdParamSchema = Joi.object({
+  patientId: objectIdField(true).messages({
+    "any.required": "Patient ID parameter is required",
+  }),
+  caseFileId: objectIdField(false).messages({
+    "string.empty": "Case File ID cannot be empty if provided",
+  }),
+});
+
 // Referral ID Parameter Validation
 const referralIdParamSchema = Joi.object({
   referralId: objectIdField(true).messages({
@@ -418,6 +435,32 @@ exports.validateObjectIdParam = (paramName) => {
 
 exports.validateDeleteRequest = (req, res, next) => {
   const { error } = deleteRequestSchema.validate(req.body);
+  if (error) {
+    const errorMessages = error.details.map(detail => detail.message);
+    return res.status(400).json(__requestResponse("400", { 
+      errorType: "Validation Error", 
+      error: errorMessages 
+    }));
+  }
+  next();
+};
+
+// Validate Patient ID and optional Case File ID parameters
+exports.validatePatientAndCaseFileIdParams = (req, res, next) => {
+  const { error } = patientAndCaseFileIdParamSchema.validate(req.params);
+  if (error) {
+    const errorMessages = error.details.map(detail => detail.message);
+    return res.status(400).json(__requestResponse("400", { 
+      errorType: "Validation Error", 
+      error: errorMessages 
+    }));
+  }
+  next();
+};
+
+// Validate Case File ID parameter
+exports.validateCaseFileIdParam = (req, res, next) => {
+  const { error } = caseFileIdParamSchema.validate(req.params);
   if (error) {
     const errorMessages = error.details.map(detail => detail.message);
     return res.status(400).json(__requestResponse("400", { 
