@@ -164,7 +164,7 @@ exports.assetListxx = async (req, res) => {
 };
 
 //  Get Asset By ID
-exports.getAssetById = async (req, res) => {
+exports.getAssetByIdxx = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -189,6 +189,209 @@ exports.getAssetById = async (req, res) => {
   } catch (error) {
     console.error("Get Asset Error:", error.message);
     return res.json(__requestResponse("500", __SOME_ERROR));
+  }
+};
+
+//  Get Asset By ID
+exports.getAssetByIdNew = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the main asset with all populated fields
+    const asset = await Asset.findById(id)
+      .populate("StationId", "StationName")
+      .populate("ParentAssetId", "AssetName")
+      .populate("SubscriptionType", "lookup_value")
+      .populate("AssetCategoryLevel1", "lookup_value")
+      .populate("AssetCategoryLevel2", "lookup_value")
+      .populate("AssetCategoryLevel3", "lookup_value")
+      .populate("MedicalSpecialties", "lookup_value")
+      .populate("AssetMapping", "AssetName")
+      .populate("TreatmentPackages.PackageCurrency", "lookup_value")
+      .populate("FeesAndCharges.ServiceCategory", "lookup_value")
+      .populate("FeesAndCharges.FeeCurrency", "lookup_value");
+
+    if (!asset) {
+      return res.json(__requestResponse("404", "Asset not found"));
+    }
+
+    // Import required models for additional data
+    const ContentMaster = require("../../modals/Common/ContentMaster");
+    const EventMaster = require("../../modals/Common/EventMaster");
+
+    // Get awards and achievements (content type: awards)
+    const awards = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: { $exists: true },
+    })
+      .populate({
+        path: "ContentTypeId",
+        match: { lookup_value: { $regex: /award/i } },
+      })
+      .populate("ContentTypeId", "lookup_value");
+
+    // Filter out null ContentTypeId after population
+    const filteredAwards = awards.filter(
+      (award) => award.ContentTypeId !== null
+    );
+
+    // Get patient testimonials (content type: patient testimonial)
+    const testimonials = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: { $exists: true },
+    })
+      .populate({
+        path: "ContentTypeId",
+        match: { lookup_value: { $regex: /testimonial/i } },
+      })
+      .populate("ContentTypeId", "lookup_value");
+
+    // Filter out null ContentTypeId after population
+    const filteredTestimonials = testimonials.filter(
+      (testimonial) => testimonial.ContentTypeId !== null
+    );
+
+    // Get all other content (excluding awards and testimonials)
+    const otherContent = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: { $exists: true },
+    })
+      .populate({
+        path: "ContentTypeId",
+        match: { lookup_value: { $not: { $regex: /(award|testimonial)/i } } },
+      })
+      .populate("ContentTypeId", "lookup_value");
+
+    // Filter out null ContentTypeId after population
+    const filteredOtherContent = otherContent.filter(
+      (content) => content.ContentTypeId !== null
+    );
+
+    // Get events related to this asset
+    const events = await EventMaster.find({ AssetId: id })
+      .populate("StationId", "StationName")
+      .populate("EventTypeId", "lookup_value")
+      .populate("RegistrationCurrency", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Combine all data
+    const assetWithAdditionalData = {
+      ...asset.toObject(),
+      awards: filteredAwards,
+      patientTestimonials: filteredTestimonials,
+      otherContent: filteredOtherContent,
+      events: events,
+    };
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, assetWithAdditionalData)
+    );
+  } catch (error) {
+    console.error("Get Asset Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
+  }
+};
+
+//  Get Asset By ID
+exports.getAssetById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the main asset with all populated fields
+    const asset = await Asset.findById(id)
+      .populate("StationId", "StationName")
+      .populate("ParentAssetId", "AssetName")
+      .populate("SubscriptionType", "lookup_value")
+      .populate("AssetCategoryLevel1", "lookup_value")
+      .populate("AssetCategoryLevel2", "lookup_value")
+      .populate("AssetCategoryLevel3", "lookup_value")
+      .populate("MedicalSpecialties", "lookup_value")
+      .populate("AssetMapping", "AssetName")
+      .populate("TreatmentPackages.PackageCurrency", "lookup_value")
+      .populate("FeesAndCharges.ServiceCategory", "lookup_value")
+      .populate("FeesAndCharges.FeeCurrency", "lookup_value");
+
+    if (!asset) {
+      return res.json(__requestResponse("404", "Asset not found"));
+    }
+
+    // Import required models for additional data
+    const ContentMaster = require("../../modals/Common/ContentMaster");
+    const EventMaster = require("../../modals/Common/EventMaster");
+
+    // Define specific content type IDs
+    const contentTypeIds = {
+      digitalCME: "68affee3874340d8d79dbf3b",
+      innovations: "68affeef874340d8d79dbf41",
+      newsArticles: "68afff04874340d8d79dbf4d",
+      awards: "68afff10874340d8d79dbf53",
+      testimonials: "68c8f5fab5cf101deca56536",
+    };
+
+    // Get Awards and Recognitions
+    const awards = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: contentTypeIds.awards,
+    })
+      .populate("ContentTypeId", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Get Patient Testimonials
+    const testimonials = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: contentTypeIds.testimonials,
+    })
+      .populate("ContentTypeId", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Get Digital CME
+    const digitalCME = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: contentTypeIds.digitalCME,
+    })
+      .populate("ContentTypeId", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Get Innovations
+    const innovations = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: contentTypeIds.innovations,
+    })
+      .populate("ContentTypeId", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Get News & Articles
+    const newsArticles = await ContentMaster.find({
+      AssetId: id,
+      ContentTypeId: contentTypeIds.newsArticles,
+    })
+      .populate("ContentTypeId", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Get events related to this asset
+    const events = await EventMaster.find({ AssetId: id })
+      .populate("StationId", "StationName")
+      .populate("EventTypeId", "lookup_value")
+      .populate("RegistrationCurrency", "lookup_value")
+      .sort({ _id: -1 });
+
+    // Combine all data with proper naming based on lookup_value
+    const assetWithAdditionalData = {
+      ...asset.toObject(),
+      AwardsRecognitions: awards,
+      PatientTestimonials: testimonials,
+      DigitalCME: digitalCME,
+      Innovations: innovations,
+      NewsArticles: newsArticles,
+      Events: events,
+    };
+
+    return res.json(
+      __requestResponse("200", __SUCCESS, assetWithAdditionalData)
+    );
+  } catch (error) {
+    console.error("Get Asset Error:", error.message);
+    return res.json(__requestResponse("500", __SOME_ERROR, error.message));
   }
 };
 
