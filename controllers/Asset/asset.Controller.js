@@ -96,7 +96,10 @@ exports.assetList = async (req, res) => {
       .populate("AssetCategoryLevel2", "lookup_value")
       .populate("AssetCategoryLevel3", "lookup_value")
       .populate("MedicalSpecialties", "lookup_value")
-      .populate("HospitalDoctors", "AssetName ShortDescription LongDescription MedicalSpecialties Specialization RegistrationYear AddressLine1 AddressLine2 PostalCode ContactName ContactPhoneNumber ContactEmailAddress ProfilePicture Logo NoofSurgeriesPerformed NoofSatisfiedPatients NoofArticlesPublished NoofLecturesDelivered Fellowships Website YouTubeChannel FacebookPage InstagramAccount LinkedInAccount");
+      .populate(
+        "HospitalDoctors",
+        "AssetName ShortDescription LongDescription MedicalSpecialties Specialization RegistrationYear AddressLine1 AddressLine2 PostalCode ContactName ContactPhoneNumber ContactEmailAddress ProfilePicture Logo NoofSurgeriesPerformed NoofSatisfiedPatients NoofArticlesPublished NoofLecturesDelivered Fellowships Website YouTubeChannel FacebookPage InstagramAccount LinkedInAccount"
+      )
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
