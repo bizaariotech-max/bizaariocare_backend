@@ -96,11 +96,11 @@ exports.assetList = async (req, res) => {
       .populate("AssetCategoryLevel2", "lookup_value")
       .populate("AssetCategoryLevel3", "lookup_value")
       .populate("MedicalSpecialties", "lookup_value")
+      .populate("HospitalDoctors", "lookup_value")
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .lean();//Use lean() for read-only operations
-
+      .lean(); //Use lean() for read-only operations
 
     return res.json(
       __requestResponse("200", __SUCCESS, {
@@ -309,7 +309,8 @@ exports.getAssetById = async (req, res) => {
       .populate("AssetMapping", "AssetName")
       .populate("TreatmentPackages.PackageCurrency", "lookup_value")
       .populate("FeesAndCharges.ServiceCategory", "lookup_value")
-      .populate("FeesAndCharges.FeeCurrency", "lookup_value");
+      .populate("FeesAndCharges.FeeCurrency", "lookup_value")
+      .populate("HospitalDoctors", "lookup_value");
 
     if (!asset) {
       return res.json(__requestResponse("404", "Asset not found"));

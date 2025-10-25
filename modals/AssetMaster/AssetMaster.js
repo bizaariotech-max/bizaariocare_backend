@@ -77,6 +77,13 @@ const AssetMasterSchema = new mongoose.Schema(
     NumberOfBeds: Number,
     NumberOfICUBeds: Number,
     NumberOfOTs: Number,
+    // new field
+    HospitalDoctors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "asset_master",
+      },
+    ],
 
     // -------------------------
     // Section 6: Address
