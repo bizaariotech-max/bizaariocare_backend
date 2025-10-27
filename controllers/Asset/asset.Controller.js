@@ -53,6 +53,7 @@ exports.assetList = async (req, res) => {
       AssetCategoryLevel3,
       StationId,
       SubscriptionType,
+      MedicalSpecialties, // for doctor- filtering based on medical specialties
     } = requestData;
 
     const query = {};
@@ -85,6 +86,10 @@ exports.assetList = async (req, res) => {
     // Subscription Type filter
     if (SubscriptionType) {
       query.SubscriptionType = SubscriptionType;
+    }
+    // Medical Specialty filter
+    if (MedicalSpecialties) {
+      query.MedicalSpecialties = MedicalSpecialties;
     }
 
     const total = await Asset.countDocuments(query);
@@ -122,6 +127,7 @@ exports.assetList = async (req, res) => {
           AssetCategoryLevel3,
           StationId,
           SubscriptionType,
+          MedicalSpecialties,
         },
         list: __deepClone(list),
       })
