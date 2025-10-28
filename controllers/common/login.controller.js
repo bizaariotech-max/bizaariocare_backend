@@ -158,7 +158,14 @@ exports.assetLogin = async (req, res) => {
       $or: [{ Email }, { PhoneNumber }],
     })
       .populate("EntityTypeId", "lookup_value")
-      .populate("Entity", "AssetName AddressLine1 ContactName");
+      .populate({
+        path: "Entity",
+        select: "AssetName AddressLine1 ContactName AssetCategoryLevel1",
+        populate: {
+          path: "AssetCategoryLevel1",
+          select: "lookup_value",
+        },
+      });
 
     if (!user) {
       return res.json(__requestResponse("404", "User not found"));
