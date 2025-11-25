@@ -316,8 +316,8 @@ exports.stationList = async (req, res) => {
     const list = await Station.aggregate([
       { $match: aggregationQuery },
       { $sort: { createdAt: -1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
+      // { $skip: (page - 1) * limit },
+      // { $limit: limit },
       {
         $lookup: {
           from: "station_masters",
@@ -470,8 +470,8 @@ exports.stationList = async (req, res) => {
     return res.json(
       __requestResponse("200", __SUCCESS, {
         total,
-        page: Number(page),
-        limit: Number(limit),
+        // page: Number(page),
+        // limit: Number(limit),
         filters: {
           search,
           CountryGroupId,
@@ -527,8 +527,8 @@ exports.stationList_new = async (req, res) => {
 
     // Get stations without population first
     let list = await Station.find(query)
-      .skip((page - 1) * limit)
-      .limit(limit)
+      // .skip((page - 1) * limit)
+      // .limit(limit)
       .sort({ createdAt: -1 })
       .lean(); // Use lean() for read-only operations
 
@@ -662,8 +662,8 @@ exports.stationList_new = async (req, res) => {
     return res.json(
       __requestResponse("200", __SUCCESS, {
         total,
-        page: Number(page),
-        limit: Number(limit),
+        // page: Number(page),
+        // limit: Number(limit),
         filters: {
           search,
           CountryGroupId,
