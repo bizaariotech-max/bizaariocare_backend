@@ -243,8 +243,8 @@ exports.stationList = async (req, res) => {
   try {
     const requestData = req.body || req.query || {};
     const {
-      page = 1,
-      limit = 10,
+      // page = 1,
+      // limit = 10,
       search = "",
       CountryGroupId,
       OrgUnitLevel,
@@ -261,41 +261,57 @@ exports.stationList = async (req, res) => {
     // CountryGroupId filter - handle array
     if (CountryGroupId && CountryGroupId !== "" && CountryGroupId !== null) {
       if (mongoose.Types.ObjectId.isValid(CountryGroupId)) {
-        query.CountryGroupId = { $in: [mongoose.Types.ObjectId(CountryGroupId)] };
+        query.CountryGroupId = {
+          $in: [mongoose.Types.ObjectId(CountryGroupId)],
+        };
       }
     }
 
     // OrgUnitLevel filter
-    if (OrgUnitLevel && OrgUnitLevel !== "" && OrgUnitLevel !== null && mongoose.Types.ObjectId.isValid(OrgUnitLevel)) {
+    if (
+      OrgUnitLevel &&
+      OrgUnitLevel !== "" &&
+      OrgUnitLevel !== null &&
+      mongoose.Types.ObjectId.isValid(OrgUnitLevel)
+    ) {
       query.OrgUnitLevel = OrgUnitLevel;
     }
 
     // ParentStationId filter
-    if (ParentStationId && ParentStationId !== "" && ParentStationId !== null && mongoose.Types.ObjectId.isValid(ParentStationId)) {
+    if (
+      ParentStationId &&
+      ParentStationId !== "" &&
+      ParentStationId !== null &&
+      mongoose.Types.ObjectId.isValid(ParentStationId)
+    ) {
       query.ParentStationId = ParentStationId;
     }
 
     const total = await Station.countDocuments(query);
-    
+
     // Build aggregation query
     const aggregationQuery = {};
-    
+
     if (query.StationName) {
       aggregationQuery.StationName = query.StationName;
     }
-    
+
     if (query.CountryGroupId) {
       aggregationQuery.CountryGroupId = query.CountryGroupId;
     }
-    
+
     if (query.OrgUnitLevel) {
-      aggregationQuery.OrgUnitLevel = mongoose.Types.ObjectId(query.OrgUnitLevel);
+      aggregationQuery.OrgUnitLevel = mongoose.Types.ObjectId(
+        query.OrgUnitLevel
+      );
     }
-    
+
     if (query.ParentStationId) {
-      aggregationQuery.ParentStationId = mongoose.Types.ObjectId(query.ParentStationId);
+      aggregationQuery.ParentStationId = mongoose.Types.ObjectId(
+        query.ParentStationId
+      );
     }
-    
+
     // Use aggregation pipeline
     const list = await Station.aggregate([
       { $match: aggregationQuery },
@@ -313,14 +329,14 @@ exports.stationList = async (req, res) => {
                   $and: [
                     { $ne: ["$$parentId", ""] },
                     { $ne: ["$$parentId", null] },
-                    { $eq: ["$_id", "$$parentId"] }
-                  ]
-                }
-              }
-            }
+                    { $eq: ["$_id", "$$parentId"] },
+                  ],
+                },
+              },
+            },
           ],
-          as: "ParentStationId"
-        }
+          as: "ParentStationId",
+        },
       },
       {
         $lookup: {
@@ -333,14 +349,14 @@ exports.stationList = async (req, res) => {
                   $and: [
                     { $ne: ["$$orgId", ""] },
                     { $ne: ["$$orgId", null] },
-                    { $eq: ["$_id", "$$orgId"] }
-                  ]
-                }
-              }
-            }
+                    { $eq: ["$_id", "$$orgId"] },
+                  ],
+                },
+              },
+            },
           ],
-          as: "OrgUnitLevel"
-        }
+          as: "OrgUnitLevel",
+        },
       },
       {
         $lookup: {
@@ -353,14 +369,25 @@ exports.stationList = async (req, res) => {
                   $and: [
                     { $ne: ["$$countryIds", ""] },
                     { $ne: ["$$countryIds", null] },
-                    { $in: ["$_id", { $cond: [{ $isArray: "$$countryIds" }, "$$countryIds", []] }] }
-                  ]
-                }
-              }
-            }
+                    {
+                      $in: [
+                        "$_id",
+                        {
+                          $cond: [
+                            { $isArray: "$$countryIds" },
+                            "$$countryIds",
+                            [],
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
           ],
-          as: "CountryGroupId"
-        }
+          as: "CountryGroupId",
+        },
       },
       {
         $lookup: {
@@ -373,14 +400,14 @@ exports.stationList = async (req, res) => {
                   $and: [
                     { $ne: ["$$currencyId", ""] },
                     { $ne: ["$$currencyId", null] },
-                    { $eq: ["$_id", "$$currencyId"] }
-                  ]
-                }
-              }
-            }
+                    { $eq: ["$_id", "$$currencyId"] },
+                  ],
+                },
+              },
+            },
           ],
-          as: "Currency"
-        }
+          as: "Currency",
+        },
       },
       {
         $lookup: {
@@ -393,14 +420,14 @@ exports.stationList = async (req, res) => {
                   $and: [
                     { $ne: ["$$isdId", ""] },
                     { $ne: ["$$isdId", null] },
-                    { $eq: ["$_id", "$$isdId"] }
-                  ]
-                }
-              }
-            }
+                    { $eq: ["$_id", "$$isdId"] },
+                  ],
+                },
+              },
+            },
           ],
-          as: "ISDCode"
-        }
+          as: "ISDCode",
+        },
       },
       {
         $addFields: {
@@ -408,8 +435,8 @@ exports.stationList = async (req, res) => {
           OrgUnitLevel: { $arrayElemAt: ["$OrgUnitLevel", 0] },
           CountryGroupId: "$CountryGroupId", // Keep as array
           Currency: { $arrayElemAt: ["$Currency", 0] },
-          ISDCode: { $arrayElemAt: ["$ISDCode", 0] }
-        }
+          ISDCode: { $arrayElemAt: ["$ISDCode", 0] },
+        },
       },
       {
         $project: {
@@ -435,9 +462,9 @@ exports.stationList = async (req, res) => {
           "Currency._id": 1,
           "Currency.lookup_value": 1,
           "ISDCode._id": 1,
-          "ISDCode.lookup_value": 1
-        }
-      }
+          "ISDCode.lookup_value": 1,
+        },
+      },
     ]);
 
     return res.json(
@@ -466,8 +493,8 @@ exports.stationList_new = async (req, res) => {
     // Handle both req.body and req.query to support GET and POST requests
     const requestData = req.body || req.query || {};
     const {
-      page = 1,
-      limit = 10,
+      // page = 1,
+      // limit = 10,
       search = "",
       CountryGroupId,
       OrgUnitLevel,
@@ -497,7 +524,7 @@ exports.stationList_new = async (req, res) => {
     }
 
     const total = await Station.countDocuments(query);
-    
+
     // Get stations without population first
     let list = await Station.find(query)
       .skip((page - 1) * limit)
@@ -514,57 +541,119 @@ exports.stationList_new = async (req, res) => {
     const currencyIds = [];
     const parentStationIds = [];
 
-    list.forEach(station => {
-      if (station.OrgUnitLevel && station.OrgUnitLevel !== "" && mongoose.Types.ObjectId.isValid(station.OrgUnitLevel)) {
+    list.forEach((station) => {
+      if (
+        station.OrgUnitLevel &&
+        station.OrgUnitLevel !== "" &&
+        mongoose.Types.ObjectId.isValid(station.OrgUnitLevel)
+      ) {
         orgUnitLevelIds.push(station.OrgUnitLevel);
       }
-      if (station.CountryGroupId && station.CountryGroupId !== "" && mongoose.Types.ObjectId.isValid(station.CountryGroupId)) {
+      if (
+        station.CountryGroupId &&
+        station.CountryGroupId !== "" &&
+        mongoose.Types.ObjectId.isValid(station.CountryGroupId)
+      ) {
         countryGroupIds.push(station.CountryGroupId);
       }
-      if (station.Currency && station.Currency !== "" && mongoose.Types.ObjectId.isValid(station.Currency)) {
+      if (
+        station.Currency &&
+        station.Currency !== "" &&
+        mongoose.Types.ObjectId.isValid(station.Currency)
+      ) {
         currencyIds.push(station.Currency);
       }
-      if (station.ParentStationId && station.ParentStationId !== "" && mongoose.Types.ObjectId.isValid(station.ParentStationId)) {
+      if (
+        station.ParentStationId &&
+        station.ParentStationId !== "" &&
+        mongoose.Types.ObjectId.isValid(station.ParentStationId)
+      ) {
         parentStationIds.push(station.ParentStationId);
       }
     });
 
     // Batch lookup for admin_lookups
-    const [orgUnitLevels, countryGroups, currencies, parentStations] = await Promise.all([
-      orgUnitLevelIds.length > 0 ? AdminLookup.find({ _id: { $in: orgUnitLevelIds } }, 'lookup_value').lean() : [],
-      countryGroupIds.length > 0 ? AdminLookup.find({ _id: { $in: countryGroupIds } }, 'lookup_value').lean() : [],
-      currencyIds.length > 0 ? AdminLookup.find({ _id: { $in: currencyIds } }, 'lookup_value').lean() : [],
-      parentStationIds.length > 0 ? Station.find({ _id: { $in: parentStationIds } }, 'StationName').lean() : []
-    ]);
+    const [orgUnitLevels, countryGroups, currencies, parentStations] =
+      await Promise.all([
+        orgUnitLevelIds.length > 0
+          ? AdminLookup.find(
+              { _id: { $in: orgUnitLevelIds } },
+              "lookup_value"
+            ).lean()
+          : [],
+        countryGroupIds.length > 0
+          ? AdminLookup.find(
+              { _id: { $in: countryGroupIds } },
+              "lookup_value"
+            ).lean()
+          : [],
+        currencyIds.length > 0
+          ? AdminLookup.find(
+              { _id: { $in: currencyIds } },
+              "lookup_value"
+            ).lean()
+          : [],
+        parentStationIds.length > 0
+          ? Station.find(
+              { _id: { $in: parentStationIds } },
+              "StationName"
+            ).lean()
+          : [],
+      ]);
 
     // Create lookup maps for efficient population
-    const orgUnitLevelMap = new Map(orgUnitLevels.map(item => [item._id.toString(), item]));
-    const countryGroupMap = new Map(countryGroups.map(item => [item._id.toString(), item]));
-    const currencyMap = new Map(currencies.map(item => [item._id.toString(), item]));
-    const parentStationMap = new Map(parentStations.map(item => [item._id.toString(), item]));
+    const orgUnitLevelMap = new Map(
+      orgUnitLevels.map((item) => [item._id.toString(), item])
+    );
+    const countryGroupMap = new Map(
+      countryGroups.map((item) => [item._id.toString(), item])
+    );
+    const currencyMap = new Map(
+      currencies.map((item) => [item._id.toString(), item])
+    );
+    const parentStationMap = new Map(
+      parentStations.map((item) => [item._id.toString(), item])
+    );
 
     // Populate the list manually
-    list = list.map(station => {
+    list = list.map((station) => {
       const populatedStation = { ...station };
 
       // Populate OrgUnitLevel
-      if (station.OrgUnitLevel && orgUnitLevelMap.has(station.OrgUnitLevel.toString())) {
-        populatedStation.OrgUnitLevel = orgUnitLevelMap.get(station.OrgUnitLevel.toString());
+      if (
+        station.OrgUnitLevel &&
+        orgUnitLevelMap.has(station.OrgUnitLevel.toString())
+      ) {
+        populatedStation.OrgUnitLevel = orgUnitLevelMap.get(
+          station.OrgUnitLevel.toString()
+        );
       }
 
       // Populate CountryGroupId
-      if (station.CountryGroupId && countryGroupMap.has(station.CountryGroupId.toString())) {
-        populatedStation.CountryGroupId = countryGroupMap.get(station.CountryGroupId.toString());
+      if (
+        station.CountryGroupId &&
+        countryGroupMap.has(station.CountryGroupId.toString())
+      ) {
+        populatedStation.CountryGroupId = countryGroupMap.get(
+          station.CountryGroupId.toString()
+        );
       }
 
       // Populate Currency
       if (station.Currency && currencyMap.has(station.Currency.toString())) {
-        populatedStation.Currency = currencyMap.get(station.Currency.toString());
+        populatedStation.Currency = currencyMap.get(
+          station.Currency.toString()
+        );
       }
 
       // Populate ParentStationId
-      if (station.ParentStationId && parentStationMap.has(station.ParentStationId.toString())) {
-        populatedStation.ParentStationId = parentStationMap.get(station.ParentStationId.toString());
+      if (
+        station.ParentStationId &&
+        parentStationMap.has(station.ParentStationId.toString())
+      ) {
+        populatedStation.ParentStationId = parentStationMap.get(
+          station.ParentStationId.toString()
+        );
       }
 
       return populatedStation;
