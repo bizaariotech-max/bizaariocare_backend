@@ -238,10 +238,9 @@ exports.stationListxxx = async (req, res) => {
   }
 };
 
-//  Station List (with aggregation pipeline)
+// Station List (with aggregation pipeline)
 exports.stationList = async (req, res) => {
   try {
-    // Handle both req.body and req.query to support GET and POST requests
     const requestData = req.body || req.query || {};
     const {
       page = 1,
@@ -259,34 +258,34 @@ exports.stationList = async (req, res) => {
       query.StationName = { $regex: search.trim(), $options: "i" };
     }
 
-    // CountryGroupId filter - validate before using
-    if (CountryGroupId && CountryGroupId !== "" && CountryGroupId !== null && mongoose.Types.ObjectId.isValid(CountryGroupId)) {
-      query.CountryGroupId = CountryGroupId;
+    // CountryGroupId filter - handle array
+    if (CountryGroupId && CountryGroupId !== "" && CountryGroupId !== null) {
+      if (mongoose.Types.ObjectId.isValid(CountryGroupId)) {
+        query.CountryGroupId = { $in: [mongoose.Types.ObjectId(CountryGroupId)] };
+      }
     }
 
-    // OrgUnitLevel filter - validate before using
+    // OrgUnitLevel filter
     if (OrgUnitLevel && OrgUnitLevel !== "" && OrgUnitLevel !== null && mongoose.Types.ObjectId.isValid(OrgUnitLevel)) {
       query.OrgUnitLevel = OrgUnitLevel;
     }
 
-    // ParentStationId filter - validate before using
+    // ParentStationId filter
     if (ParentStationId && ParentStationId !== "" && ParentStationId !== null && mongoose.Types.ObjectId.isValid(ParentStationId)) {
       query.ParentStationId = ParentStationId;
     }
 
     const total = await Station.countDocuments(query);
     
-    // Convert string ObjectIds to proper ObjectId format for aggregation
+    // Build aggregation query
     const aggregationQuery = {};
     
-    // Copy search filter as-is
     if (query.StationName) {
       aggregationQuery.StationName = query.StationName;
     }
     
-    // Convert ObjectId strings to ObjectId format for aggregation
     if (query.CountryGroupId) {
-      aggregationQuery.CountryGroupId = mongoose.Types.ObjectId(query.CountryGroupId);
+      aggregationQuery.CountryGroupId = query.CountryGroupId;
     }
     
     if (query.OrgUnitLevel) {
@@ -297,7 +296,7 @@ exports.stationList = async (req, res) => {
       aggregationQuery.ParentStationId = mongoose.Types.ObjectId(query.ParentStationId);
     }
     
-    // Use aggregation pipeline to handle empty string ObjectIds safely
+    // Use aggregation pipeline
     const list = await Station.aggregate([
       { $match: aggregationQuery },
       { $sort: { createdAt: -1 } },
@@ -346,15 +345,15 @@ exports.stationList = async (req, res) => {
       {
         $lookup: {
           from: "admin_lookups",
-          let: { countryId: "$CountryGroupId" },
+          let: { countryIds: "$CountryGroupId" },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
-                    { $ne: ["$$countryId", ""] },
-                    { $ne: ["$$countryId", null] },
-                    { $eq: ["$_id", "$$countryId"] }
+                    { $ne: ["$$countryIds", ""] },
+                    { $ne: ["$$countryIds", null] },
+                    { $in: ["$_id", { $cond: [{ $isArray: "$$countryIds" }, "$$countryIds", []] }] }
                   ]
                 }
               }
@@ -407,7 +406,7 @@ exports.stationList = async (req, res) => {
         $addFields: {
           ParentStationId: { $arrayElemAt: ["$ParentStationId", 0] },
           OrgUnitLevel: { $arrayElemAt: ["$OrgUnitLevel", 0] },
-          CountryGroupId: { $arrayElemAt: ["$CountryGroupId", 0] },
+          CountryGroupId: "$CountryGroupId", // Keep as array
           Currency: { $arrayElemAt: ["$Currency", 0] },
           ISDCode: { $arrayElemAt: ["$ISDCode", 0] }
         }
